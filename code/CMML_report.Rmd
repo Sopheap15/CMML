@@ -1,0 +1,600 @@
+---
+title: "<center>Central Media Making Laboratory <br> Report 2021 </center>"
+output:
+  html_document:
+    theme: cerulean
+    # toc: true
+    # toc_float: true
+    #code_folding: hide
+---
+
+<!-- make leaflet center -->
+
+```{=html}
+<style>
+.leaflet {
+    margin: auto;
+}
+</style>
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F,
+                      message = F,
+                      collapse = T,
+                      warning = F,
+                      tidy = T,
+                      comment = F,
+                      fig.align = 'center')
+#rm(list = ls())
+```
+
+## 1. Introduction
+
+### 1.1. Objectives
+
+-   Demonstrate CMML activities
+-   Define CMML critical needs and inform management
+-   Overview of CMML raw material procurement
+-   Understand customer request and organize media production as well as media delivery
+
+--\> Data of media production, distribution and raw materials were extracted from the Central Media Making Laboratory System (CMMLMS) database in comma separated value and imported to the R programming language for cleaning and analysis.
+
+### 1.2. Background
+
+The Diagnostic Microbiology Development Program (DMDP) has been working with the University of Health Sciences (UHS) in Phnom Penh, Cambodia since 2011 to provide a sustainable source of quality-controlled media such as blood culture broth bottles, agar plates, and media for identification of bacteriological agents. The media is produced and quality controlled by following guidelines for Assuring Quality of Medical Microbiology Culture Media; Clinical and Laboratory Standards Institute (CLSI M22) and Australian Society for Microbiology 2nd edition to guide development of CMML standard operating procedures (SOP) and processes. In 2017, DMDP supported the expansion and renovation of premises, purchase and installation of equipment and long-term on-site technical mentoring. Care and bleeding of sheep ensured access to a sustainable source of sheep blood. Since February 2019, CMML has held ISO certification (ISO 9001:2015). The media products were included in the Ministry of Health Essential Medicines List (EML) and more than 20 customers purchased media for their routine clinical bacteriology laboratory set up.
+
+<!------------------------------------Raw Materials-------------------------------------->
+
+## 2. Raw materials
+
+Raw materials are grouped by item name regardless of different brands to discover the current stock. Rows highlighted in pink indicate that the item's quantity is lower than the threshold. The items with zero threshold were excluded from highlighting. Note: raw data might not be up to date. It is depends on the day data extracted from CMMLMS
+
+```{r Raw materials avialable in stock, results='asis'}
+r_da <- r_data %>%
+  filter(#remaining_stock_item_batch > 0,
+         !is.na(threshold),
+         !is.na(name)
+        # state == "Good"
+         ) %>% 
+  #select(remaining_stock_item_batch,name,unit,product_type) %>% 
+  group_by(name, unit.y, category, threshold) %>% 
+  summarise(instock = round_half_up(sum(remaining_stock_item_batch))) %>% 
+  select(Category = category, 'Item name' = name, 'Qnt instock' = instock, Threshold = threshold, 'In unit' = unit.y) %>%
+  arrange(Category, 'Item name')
+
+# short order to the last row
+  r_da <- rbind(r_da %>% filter(Category != "Other"),r_da %>% filter(Category == "Other"))
+  
+# add to table and formate
+  r_da %>% 
+  kable(align = c('l','l','c','c',"l"), format.args = list(big.mark = ",")) %>%
+  kable_styling(bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>%
+  row_spec(0, background = "#E09B43", color = "white", align = "c") %>% 
+  row_spec(which(r_da$`Qnt instock` <= r_da$Threshold, r_da$Threshold > 0) , bold = T, background = "#FFE4E1", color = "black") %>% 
+# row_spec(which(r_da$`Item name` == "Distilled Water") , background = "white",color = "black") %>% 
+  #row_spec(which(r_da$`Qnt instock` <= r_da$Threshold), bold = T, background = "#DC7DED", color = "white") %>% 
+  kableExtra::collapse_rows(columns = 1,valign = "top") %>% 
+  scroll_box(width = "100%", height = "800px")
+```
+
+<br> Dehydrate media powder is critical for the production of culture media. Based on media production data, we express dehydrated media in grams to determine the amount of consumption.
+
+```{r Raw material consumption base on production}
+p_data <- data %>% 
+  filter(preparation_date >= "2021-01-01") %>% 
+  distinct(batch_number,.keep_all = T) %>% # remove duplicated..................
+  group_by(powder_name) %>% 
+  summarise(total = round_half_up(sum(powder_kg,na.rm = T)*1000)) 
+
+p_data %>% 
+  ggplot(aes(reorder(powder_name,-total),total,fill = powder_name)) +
+  geom_bar(stat = "identity") + 
+  geom_text(aes(label = format(total, big.mark = ",")), hjust = -0.1, size = 3) +
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = "non", 
+        panel.grid.major = element_blank(),
+        axis.text = element_text(colour = "black"), 
+        plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
+        axis.title = element_text(color = "BlueViolet")) +
+  scale_y_continuous(expand = c(0.01,0.01), 
+                     limits = c(0,max(p_data$total) + 1000), 
+                     label = scales::comma) +
+  labs(y = "Quantity in gram", 
+       x = "Dehydrate media", 
+       title = "Dehydrate media consumption\n from media production data")
+
+```
+
+<!---------------------------------Sheep Care---------------------------------->
+
+## 3. Sheep Care
+
+Sheep blood is a vital supplement to support bacteria growth and visualize hemolysis patterns. To sustain sheep blood supply for CMML, DMDP establish agreement with Resource Development International Cambodia (RDIC) and EUROVET veterinary clinics for care, feeding, bleeding and housing of the sheep.\
+
+<center>
+
+![Fig 1. Sheep pen](image/RDIC_sheep_pen.JPG){width="310"}  ![Fig 2. Sheep farm](image/Sheep_farm.jpeg){width="308"}
+</center>
+```{r sheep inventory, fig.width=5,fig.height=4}
+
+# sheep inventory
+sheep_inventory %>% 
+	ggplot(aes(farm, fill = sex)) + 
+	geom_bar() +
+	geom_text(aes(label = ..count..),stat = 'count', 
+						position = position_stack(vjust = 0.5)) +
+	labs(x = "Farm",
+			 y = "count (head)",
+			 title = "Sheep inventory",
+			 subtitle = paste0("(n= ",nrow(sheep_inventory),")"),
+			 caption = paste0("Including ",sheep_inventory %>% filter(sheep_id_microchip_no == "lamb") %>% count(), " lamb at EPR")) +
+	theme_bw() +
+	theme(plot.title = element_text(color = "blue",face = "bold", hjust = 0.5),
+				plot.subtitle = element_text(color = "blue", hjust = 0.5),
+				axis.title = element_text(color = "BlueViolet"),
+				axis.text = element_text(colour = "black"),
+				plot.caption = element_text(face = "italic"))
+  
+```
+
+```{r monthly sheep blood collection}
+# sheep blood collection
+sblood <- sheep_blood %>% 
+	mutate(month = factor(format(collection_date, "%b"),levels = month.abb)) %>%
+	group_by(month) %>% 
+	summarise(n = sum(blood_volume_ml))
+
+sblood %>% 
+	ggplot(aes(month, n, fill = month)) + 
+	geom_bar(stat = "identity") +
+	geom_label(aes(label = format(n, big.mark = ",")), vjust = 1.3) +
+	scale_y_continuous(label = scales::comma) +
+	labs(x = "Month", 
+			 y = "Volume (ml)", 
+			 title = "Monthly Sheep Blood collection",
+			 subtitle = paste0("(n= ", format(sblood$n, big.mark = ",") , "ml)")) +
+	theme_bw() +
+	theme(legend.position = "non",
+				axis.text = element_text(color = "black"),
+				plot.title = element_text(color = "blue", face = "bold", hjust = 0.5),
+				plot.subtitle = element_text(color = "blue", hjust = 0.5),
+				axis.title = element_text(color = "BlueViolet"),
+				panel.grid = element_blank())
+```
+CMML performs quality control of sheep blood by monitoring packed cell volume (PCV). The acceptable range of PCV for sheep is between 24 to 45. Below is the summary table of PCV from the two farms:
+```{r sheep care}
+# sheep care
+sheep_care %>% 
+	group_by(farm) %>% 
+	get_summary_stats(pcv_24_45_percent,type = "common") %>% 
+	select(-variable) %>% 
+  kable(align = c("l","c","c","c","c","c","c","c","c","c")) %>% 
+  kable_styling(fixed_thead = T, full_width = T, bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>% 
+  row_spec(0,background = "#CCCCFF")
+
+```
+
+
+
+<!------------------------------------IQC------------------------------------------------>
+
+## 4. Media Internal Quality Control
+
+CMML performs quality control for all batches of production media before delivery to customers. Table below summaries result of quality control of media. Note: experiment media were excluded from this table.
+
+```{r IQC}
+# import file from excel IQC.xlsx and then filter out column comment having experiment word
+iqc <- import(here("data","IQC.xlsx")) %>%
+  mutate(exp = str_extract(comments,"Experiment|experiment|exper|Exper"))
+
+iqc <- iqc %>% 
+  filter(is.na(exp)) %>% 
+  group_by(name_media,qc_result) %>% count() %>%
+  pivot_wider(names_from = qc_result,values_from = n) %>% 
+  arrange(name_media) %>%  
+  adorn_totals(c("row","col")) %>% 
+  mutate_all(~replace(., is.na(.), 0)) %>% 
+  mutate(name_media = recode(name_media, 
+                               "Cystine Lactose Electrolyte Deficient Agar" = "Cystine Lactose                                Electrolyte Deficient Agar (CLED)",
+                               "Thiosulfate Citrate Bile Salts Sucrose Agar" = "Thiosulfate                                   Citrate Bile Salts Sucrose Agar (TCBS)"))
+
+# filter column total to calculate percentage
+iqc_total <- iqc %>% 
+    filter(name_media == "Total") %>% 
+    mutate(yes = paste(yes,"(", round(yes/Total * 100,  1) ,"%)"),
+           no = paste(no,"(", round(no/Total * 100,  1) ,"%)")) 
+
+# combine file
+iqc <- iqc %>% 
+filter(name_media != "Total") %>% 
+  rbind(.,iqc_total) %>% 
+  rename("Media name" = name_media,"Pass" = yes, "Fail" = no)
+
+# show in table
+iqc %>% 
+  kable(align = c('l','c','c','c')) %>% 
+  kable_styling(full_width = T, bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>% 
+  row_spec(0,background = "#82E0AA") %>% 
+  row_spec(which(iqc$Fail > 0) , bold = T, background = "#FFE4E1", color = "black")
+  
+  
+```
+
+<!-------------------------------Production------------------------------------>
+
+## 5. Media production
+
+We compute media production data from 1 Jan - `r format(max(data$preparation_date),"%d %b %Y")`
+
+```{r cummulative media production,fig.width = 8}
+p_data <- data %>% 
+  filter(preparation_date >= "2021-01-01") %>% 
+  distinct(batch_number,.keep_all = T) %>% # remove duplicated..................
+  group_by(media_name) %>% 
+  summarise(n = sum(p_quantity)) %>% arrange(-n)
+
+ymax <- p_data %>% 
+  top_n(n = 1)
+
+p_data %>% 
+  ggplot(aes(reorder(media_name, -n),n,fill = media_name)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = format(n, big.mark = ",")),size = 3, hjust = -0.01) +
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = "non", 
+        panel.grid.major = element_blank(),
+        axis.text = element_text(colour = "black"), 
+        plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
+        plot.subtitle = element_text(color = "blue",hjust = 0.5),
+        axis.title = element_text(color = "BlueViolet")) +
+  scale_y_continuous(expand = c(0.01,0.01), limits = c(0, ymax$n + 1000)) +
+  labs(y = "Quantity", 
+       x = "Media name", 
+       title = "Cummulative Media Production",
+       subtitle = paste0("(n = ",format(sum(p_data$n), big.mark = ",")," unit)")) 
+  
+```
+
+<!-- Media production by month-->
+
+```{r production by month,fig.width=10, fig.height=15}
+p_data <- data %>% 
+  filter(preparation_date >= "2021-01-01") %>% 
+  distinct(batch_number, .keep_all = T) %>% 
+  group_by(media_name, p_month) %>% 
+  mutate(n = sum(p_quantity)) %>% 
+  select(media_name,n,p_month) %>% 
+  distinct(media_name,n,p_month,.keep_all = T)
+
+p_data %>% 
+  ggplot(aes(p_month, n, fill = media_name)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = format(n,big.mark = ",")), size = 2.5, vjust = -0.2) +
+  facet_wrap(~ media_name, ncol = 4) +
+  theme_bw() +
+  theme(strip.text = element_text(face = "bold"), 
+        legend.position = "non",
+        plot.title = element_text(color = "blue",face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(color = "blue", hjust = 0.5),
+        axis.title = element_text(color = "BlueViolet")) +
+  scale_y_continuous(limits = c(0,max(p_data$n) + 200)) +
+  labs(x = "Month", 
+       y = "Unit", 
+       title = "Media Production by Month",
+       subtitle = paste0("(n = ",format(sum(p_data$n), big.mark = ",")," unit)"))
+```
+
+<!-- Monthly production by month by type -->
+
+```{r monthly production by month by type}
+
+p_data <- data %>% 
+  filter(preparation_date >= "2021-01-01") %>% 
+  distinct(batch_number,media_name,media_type, .keep_all = T) %>%
+  group_by(p_month, media_type) %>% 
+  summarise(n = sum(p_quantity),.groups = "drop") %>%
+  group_by(p_month) %>% 
+  mutate(total = sum(n))
+
+p_data %>% # plot data...........
+  ggplot(aes(p_month, n, fill = media_type)) +
+  geom_bar(stat = "identity" ) +
+  facet_wrap(~ reorder(media_type, -n),ncol = 2) +
+  geom_text(aes(label = format(n, big.mark = ",")), size = 3, vjust = -0.2) +
+  theme_bw() +
+  theme(strip.text = element_text(face = "bold"), 
+        legend.position = "non", 
+        axis.text = element_text(colour = "black"),
+        plot.title = element_text(hjust = 0.5,face = "bold",colour = "blue"),
+        plot.subtitle = element_text(hjust = 0.5, color = "blue"), 
+        axis.title = element_text(color = "BlueViolet")) +
+  scale_y_continuous(expand = c(0.01,0.01),limits = c(0,max(p_data$n) + 3000), labels = scales::comma) +
+  labs(x = "Month",
+       y = "Quantity", 
+       title = "Media Production by Month by Type", 
+       subtitle = paste0("(n = ", format(sum(p_data$n), big.mark = ",")," unit)"))  
+```
+
+In order to calculate the average of media production accurately, we exclude production data of the last month with less than 28 days.
+
+```{r , results = 'asis'}
+p_data <- data %>% 
+    filter(preparation_date >= "2021-01-01") %>% 
+    filter(preparation_date <= ifelse(format(max(preparation_date),"%d") >= 28, max(preparation_date), as.Date(max(preparation_date)) - as.numeric(format(max(preparation_date),"%d")))) %>% # max date - max day
+    distinct(batch_number,media_name,media_type, .keep_all = T) %>% 
+    group_by(p_month, media_type) %>% 
+    summarise(n = sum(p_quantity),.groups = "drop")
+    
+p_data %>% 
+  group_by(media_type) %>% 
+   summarise("Average (unit)" = round_half_up(mean(n)),
+            "Standard Deviation" = round_half_up(sd(n))) %>% 
+  rename("Media Type" = media_type) %>% 
+  mutate_if(is.numeric, format, big.mark = ",") %>% 
+  kable(align = c('l','c','c')) %>% 
+  kable_styling(full_width = F, bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>% 
+  column_spec(1, width = "25em") %>% 
+  row_spec(0, bold = T, background = "#FFC300")
+
+  
+```
+
+<!-------------------------------Distribution---------------------------------->
+
+## 6. Media distribution
+
+Media distribution is calculated from 1 Jan - `r format(max(d_data$delivery_date),"%d %b %Y")`
+
+The bubble in the map shows the different sites of customers orders and the size of the bubble indicates the quantity in units. In cooperation with interactive maps, you can zoom in and click on map to see data plotting.
+
+<!-------- adding map ------------>
+
+```{r adding map to show customer location,fig.align='center'}
+# read boundary map
+map <- read_sf(here("khm_adm1_un","khm_adm1_un.shp"))
+map <- sf::st_make_valid(map)
+
+# data
+m_data <- data %>% 
+          filter(!is.na(customer_name)) %>% 
+          mutate(customer_name = recode(customer_name,
+                      "BTB_AFRIMS" = "Battambang",
+                      "National Public Health Laboratory - AMR" = "NPHL",
+                      "NHealth Laboratory" = "Royal Phnom Penh hospital"
+                              )) %>%
+  group_by(customer_name) %>%
+  summarise(Total = sum(d_quantity,na.rm = T)) 
+
+# import coordination of customer
+adr <- import(here("dictionary","customer_name.xlsx"))
+
+# join data and coordination
+m_data <- left_join(m_data,adr) %>% 
+          st_as_sf(coords = c("x","y"), crs = 4326)
+
+tmap_mode("view")
+tm_basemap("Esri.WorldTopoMap") +
+tm_shape(map) +
+  tm_polygons(col = "#AED6F1", alpha = 0.5) + 
+  tm_shape(m_data) + 
+  tm_bubbles("Total",col = "Total",legend.col.show = F) +
+  tm_view(set.view = c(104.8879197, 12.6687923, 7.3)) 
+
+```
+
+```{r cummulative media distribution, fig.width=8}
+d_data <- data %>% 
+  filter(delivery_date >= "2021-01-01") %>% 
+  group_by(media_name) %>% 
+  summarise(n = sum(d_quantity),.groups = "drop") %>% 
+  arrange(-n) 
+
+d_data %>% 
+  ggplot(aes(reorder(media_name, -n), n, fill = media_name)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = format(n, big.mark = ",")), size = 3, hjust = -0.01) +
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = "non", 
+        panel.grid.major = element_blank(), 
+        axis.text = element_text(colour = "black"), 
+        plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
+        plot.subtitle = element_text(color = "blue",hjust = 0.5), 
+        axis.title = element_text(color = "BlueViolet")) +
+  scale_y_continuous(expand = c(0.01,0.01),limits = c(0,max(d_data$n) + 1000)) +
+  labs(y = "Quanity", 
+       x = "Media name", 
+       title = "Cummulative Media Distribution", 
+       subtitle = paste0("(n = ",format(sum(d_data$n,na.rm = T), big.mark = ",")," unit)")) 
+
+```
+
+<!-- Monthly distribution Not sure it is useful information?-->
+
+```{r monthly distribution}
+d_data <- data %>% 
+  filter(delivery_date >= "2021-01-01") %>% 
+  group_by(d_month, media_type) %>% 
+  summarise(n = sum(d_quantity),.groups = "drop") %>%
+  group_by(d_month) %>% 
+  mutate(total = sum(n))
+
+d_data %>% # plot data...........
+  ggplot(aes(d_month, n, fill = media_type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+ #facet_wrap(~ reorder(media_type,-n),ncol = 2)+
+  geom_text(aes(label = format(n, big.mark = ",")),
+            size = 2.5,vjust = -0.2,hjust = 0.5, 
+            position = position_dodge(width = 1)) +
+ scale_y_continuous(expand = c(0.01,0.01),limits = c(0,max(d_data$n) + 1250),labels = scales::comma) +
+  labs(x = "Month",
+       y = "Quantity",
+       title = "Media Distribution by Month by Type",
+       subtitle = paste0("(n =  ",format(sum(d_data$n,na.rm = T),big.mark = ",")," unit)")) +
+    theme_classic() +
+     theme(strip.text = element_text(face = "bold"),
+        axis.text = element_text(colour = "black"),
+        plot.title = element_text(color = "blue",face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(color = "blue",hjust = 0.5),
+        axis.title = element_text(color = "BlueViolet"),
+        legend.title = element_blank(),
+        legend.position = c(0.7,0.9),
+        legend.direction = "horizontal") 
+ 
+
+```
+
+<!-- Customer in table -->
+
+```{r media distributes to customer, results="asis"}
+d_data <- data %>% 
+  filter(delivery_date >= "2021-01-01") %>% 
+  select(customer_name, d_month, d_quantity, media_type) %>% 
+  group_by(customer_name, d_month) %>% 
+  summarise(n = sum(d_quantity), .groups = "drop") %>% 
+  arrange(d_month) %>% 
+  pivot_wider(names_from = d_month,values_from = n) %>% 
+  mutate_all(~replace(., is.na(.), 0)) %>% 
+  mutate(Total = rowSums(across(where(is.numeric)))) %>% 
+  arrange(-Total) %>% 
+  rename('Customer Name' = customer_name)
+
+d_data %>% 
+   mutate_if(is.numeric, format, big.mark = ",") %>% 
+   kable(align = c('l','c','c','c','c','c','c','c','c','c','c','c','c')) %>% 
+   kable_styling(fixed_thead = T, full_width = T, bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>% 
+  row_spec(0,background = "#CCCCFF") %>% 
+  footnote(general_title = "","NPHL: National Public Health Laboratory,
+               BOM: Blue Opportunity Medical Co.,Ltd.,
+               NHealth Laboratory: Royal Phnom Penh hospital's laboratory")
+
+```
+
+<!-- Note sure it is useful but hide it now-Type of customer -->
+
+```{r customer purchased media,fig.width = 9,fig.height=7, eval=F}
+data %>% 
+  filter(delivery_date >= "2021-01-01") %>%
+  select(customer_type, d_month, d_quantity, media_type) %>% 
+  group_by(customer_type, media_type) %>% 
+  summarise(n = sum(d_quantity),.groups = "drop") %>% 
+  ggplot(aes(reorder(customer_type,-n),n,fill = media_type)) +
+  geom_col(position = position_stack(reverse = T)) +
+  geom_text(aes(label = ifelse(n < 300,"",format(n, big.mark = ","))), size = 2.5,position =  position_stack(reverse = T, vjust = 0.5)) +
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = "bottom",legend.title = element_blank(),axis.text = element_text(colour = "black"),plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),axis.title = element_text(color = "BlueViolet")) + scale_y_continuous(expand = c(0.01,0), labels = scales::comma, limits = c(0,NA)) + guides(fill = guide_legend((override.aes = c("red","purple","yellow","green")))) +
+  labs(x = "",y = "Quantity",title = "TYPE OF MEDIA DISTRIBUTE to CUSTOMER") 
+
+```
+
+From the start of the year, CMML distributed quality controlled media to different groups of customers around the country. Customers are classified in four groups:   
+1. Government laboratory supported by DMDP: Siem Reap, Battambang, Kampong Cham, Takeo and National Public Health Laboratory   
+2. Government laboratory supported by project: e.g AMR surveillance, stool project in Battambang   
+3. Government laboratory purchased: interestingly with an increase in orders from government laboratories e.g Khmer Soviet Friendship Hospital, Cambodia China Friendship Hospital (Kossamak), National Pediatric Hospital,...   
+4. Private laboratory purchased: e.g Royal Phnom Penh hospital department of laboratory, International Laboratory, Dynamic pharma....  
+
+```{r media distribute by customer type and media type}
+d_data <- data %>% 
+  filter(delivery_date >= "2021-01-01") %>% 
+  select(media_type,media_name, customer_name, customer_type, d_quantity,cost) %>% 
+  group_by(customer_type,media_type) %>% 
+  summarise(n = sum(d_quantity,na.rm = T),.groups = "keep") %>%
+  ungroup()
+
+d_data %>% 
+  ggplot(aes(factor(customer_type,levels = c("Govt. Lab supported by DMDP","Govt. Lab supported by project","Govt. Lab (purchased)","Private Lab (purchased)","Training/promotion")), n,fill = media_type)) + 
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = format(n, big.mark = ",")), hjust = -0.1, size = 3) + 
+  facet_wrap(~media_type) + 
+  coord_flip() + 
+  labs(x = "",
+       y = "Quantity",
+       title = "Media Distubution by Cusotmer Type and Media Type",
+       subtitle = paste0("(n =  ",format(sum(d_data$n),big.mark = ",")," unit)")) +
+  scale_y_continuous(labels = scales::comma, expand = c(0,0),limits = c(0,max(d_data$n) + 5000)) +
+  theme_bw() +
+  theme(legend.position = "non",
+        strip.text = element_text(face = "bold"),
+        axis.text = element_text(colour = "black"),
+        plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
+         plot.subtitle = element_text(color = "blue",hjust = 0.5))
+
+```
+
+<!-- distribute media base on type of customer -->
+
+```{r proportion of media distributed to customer}
+d_data <- data %>% 
+  filter(delivery_date >= "2021-01-01") %>% 
+  select(media_name, customer_name, customer_type, d_quantity,cost) %>% 
+  group_by(customer_type) %>%
+  summarise(n = sum(cost,na.rm = T),.groups = "keep") %>%
+  ungroup() %>% 
+  mutate(percentage = round_half_up(n/sum(n)*100))
+
+d_data %>% 
+  ggplot(aes(x = "",
+             y = n, 
+             fill = factor(customer_type,
+                           levels = c("Govt. Lab supported by DMDP",
+                                      "Govt. Lab supported by project",
+                                      "Govt. Lab (purchased)",
+                                      "Private Lab (purchased)",
+                                      "Training/promotion")))) +
+  geom_bar(stat = "identity") +
+  coord_polar("y", start = 3.5, direction = -1) +
+  theme_void() +
+  geom_text_repel(aes(x = 1.1,
+                      label = paste0(format(round_half_up(n), big.mark = ",")," $"," (",percentage,"%)")),
+                  position = position_stack(vjust = 0.5)) +
+  theme(plot.title = element_text(hjust = 0.5), 
+        plot.subtitle = element_text(hjust = 0.5)) + 
+  labs(title = "Income from Media Distribution", 
+       subtitle = paste0("Cost = (", format( round_half_up(sum(d_data$n,na.rm = T)), big.mark = ",")," USD)"),
+       fill = "Customer type")
+  
+```
+
+We summarised quantity and cost in USD for the DMDP supported laboratory by month for routine diagnostic.\
+<!-- DMDP supported lab with type of media delivery monthly with quantity and cost -->
+
+```{r DMDP supported lab}
+d_data <- data %>% 
+  select(customer_name, delivery_date, d_month, media_type, d_quantity, cost) %>% 
+  filter(customer_name %in% c("Siem Reap", "Battambang", "Takeo", "Kampong Cham", "NPHL"),
+         delivery_date >= "2021-01-01") %>% 
+  group_by(d_month,customer_name,media_type) %>% 
+  summarise(total = sum(d_quantity,na.rm = T),
+            cost = sum(cost,na.rm = T)) %>% 
+  arrange(d_month) %>% 
+  mutate(Qnt_cost = paste(total,"(",round_half_up(cost),"$)")) %>% 
+  select(-total,-cost) %>% 
+  pivot_wider(names_from = d_month, values_from = Qnt_cost) %>% 
+  arrange(customer_name, media_type) %>%
+  rename("Cusomter Name" = customer_name, 
+         "Media Type" = media_type) %>% 
+  mutate_all(~replace(., is.na(.), 0))
+
+d_data %>% 
+   mutate_if(is.numeric, format, big.mark = ",") %>% 
+   kable(align = c('l','c','c','c','c','c','c','c','c','c','c','c','c')) %>% 
+   collapse_rows(1, valign = "middle") %>% 
+   kable_styling(fixed_thead = T, full_width = T, bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>% 
+  row_spec(0, background = "#C6E2FF") %>% 
+  footnote(general_title = "","No price list for media: Trypticase Soy Broth, 	
+Trypticase Soy Broth + 20% glycerol, Modified Thayer-Martin Agar, GC agar +1% growth supplement") 
+```
+<!------------------------------------Remove objects------------------------------------->
+
+```{r remove objects}
+rm(list = ls())
+```
+
+<p align="right">
+Reported by CMML <br><br><br> `r format(Sys.Date(),"%d-%b-%Y")`
+</p>
