@@ -16,6 +16,13 @@ output:
     margin: auto;
 }
 </style>
+
+<style>
+.table-hover > tbody > tr:hover { 
+  background-color: #f4f442;
+}
+</style>
+
 ```
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F,
@@ -354,27 +361,6 @@ The bubble in the map shows the different sites of customers orders and the size
 <!-------- adding map ------------>
 
 ```{r adding map to show customer location,fig.align='center'}
-# read boundary map
-map <- read_sf(here("khm_adm1_un","khm_adm1_un.shp"))
-map <- sf::st_make_valid(map)
-
-# data
-m_data <- data %>% 
-          filter(!is.na(customer_name)) %>% 
-          mutate(customer_name = recode(customer_name,
-                      "BTB_AFRIMS" = "Battambang",
-                      "National Public Health Laboratory - AMR" = "NPHL",
-                      "NHealth Laboratory" = "Royal Phnom Penh hospital" )) %>%
-  group_by(customer_name) %>%
-  summarise(Total = sum(d_quantity,na.rm = T))
-
-# import coordination of customer
-adr <- import(here("dictionary","customer_name.xlsx"))
-
-# join data and coordination
-m_data <- left_join(m_data, adr) %>% 
-          st_as_sf(coords = c("x","y"), crs = 4326)
-
 tmap_mode("view")
 tm_basemap("Esri.WorldTopoMap") +
 tm_shape(map) +
@@ -607,7 +593,7 @@ Trypticase Soy Broth + 20% glycerol, Modified Thayer-Martin Agar, GC agar +1% gr
 <!------------------------------------Remove objects------------------------------------->
 
 ```{r remove objects}
-#rm(list = ls())
+rm(list = ls())
 ```
 
 <p align="right"> Reported by CMML <br><br><br> `r format(Sys.Date(),"%d-%b-%Y")`</p>

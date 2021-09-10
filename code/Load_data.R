@@ -26,7 +26,7 @@ data <- full_join(p_data,d_data,by.x = "media_name", by.y = "media_name") %>%
   mutate(p_month = factor(format(preparation_date,"%b"),levels = month.abb, ordered = T),
          d_month = factor(format(delivery_date,"%b"),levels = month.abb, ordered = T))
 
-# Clean Production data-------------------
+  # clean Production data-------------------
 data <- data %>%
   # dehydrate powder name.......
   mutate(powder_name = recode(media_name,
@@ -118,7 +118,7 @@ data <- data %>%
   )
 
 
-# Clean Delivery data--------------------
+  # clean Delivery data--------------------
 data <- data %>% 
   # recode customer name......
   mutate(
@@ -212,7 +212,6 @@ data <- data %>%
 
 
 
-
 # load Raw material data -------
 # read raw materials file
 r_data <- read_csv(here("data","Raw_material.csv"),trim_ws = T, na = c("","NA")) %>% clean_names()
@@ -227,7 +226,6 @@ r_data <- merge(r_data, dic, by = "product_name", all = T)
 
 
 
-
 # IQC----
 # raw data from system and filter to date > 2021-01-01
 iqc <- import(here("data","IQC.csv")) %>% 
@@ -235,6 +233,7 @@ iqc <- import(here("data","IQC.csv")) %>%
   filter(qc_date >= "2021-01-01", qc_result != "", !batch_no %in% c("	
 KIA260521-01 ", "KIA260521-01", "KIA030621-01", "KIA090621-01")) %>% 
   mutate(exp = str_extract(comments,"Experiment|experiment|exper|Exper"))
+
 
 
 # load sheep data----------------
@@ -255,3 +254,26 @@ sheep_care <- read_sheet(url, sheet = "Sheep_care", skip = 2) %>%
 sheep_blood <- read_sheet(url, sheet = "Sheep_blood_collection", skip = 2) %>% 
   select(Collection_Date:Comment) %>% 
   clean_names()
+
+
+# map data-----
+# read boundary map
+map <- read_sf(here("khm_adm1_un","khm_adm1_un.shp"))
+map <- sf::st_make_valid(map)
+
+# data
+m_data <- data %>% 
+  filter(!is.na(customer_name)) %>% 
+  mutate(customer_name = recode(customer_name,
+                                "BTB_AFRIMS" = "Battambang",
+                                "National Public Health Laboratory - AMR" = "NPHL",
+                                "NHealth Laboratory" = "Royal Phnom Penh hospital" )) %>%
+  group_by(customer_name) %>%
+  summarise(Total = sum(d_quantity,na.rm = T))
+
+# import coordination of customer
+adr <- import(here("dictionary","customer_name.xlsx"))
+
+# join data and coordination
+m_data <- left_join(m_data, adr) %>% 
+  st_as_sf(coords = c("x","y"), crs = 4326)
