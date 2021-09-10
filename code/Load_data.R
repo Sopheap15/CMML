@@ -1,10 +1,24 @@
-#  Load production and delivery data--------------------
+# Load library----
+library(here)
+library(tidyverse)
+library(lubridate)
+library(rio)
+library(janitor)
+library(kableExtra)
+library(ggrepel)
+library(sf)
+library(tmap)
+library(googlesheets4)
+library(rstatix)
 
-# read data from media production.......................
+
+# Load production, delivery data and bind together--------------------
+
+# read data from media production
 p_data <- read_csv(here("data","Media_production.csv"),trim_ws = T,na = c("","NA")) %>% clean_names() %>% rename("p_quantity" = quantity)
 
 
-# read data from media delivery .......................
+# read data from media delivery
 d_data <- read_csv(here("data","Media_delivery.csv"),trim_ws = T,na = c("","NA")) %>% clean_names() %>% rename("d_quantity" = quantity)
 
 # Full joint data together
@@ -12,13 +26,14 @@ data <- full_join(p_data,d_data,by.x = "media_name", by.y = "media_name") %>%
   mutate(p_month = factor(format(preparation_date,"%b"),levels = month.abb, ordered = T),
          d_month = factor(format(delivery_date,"%b"),levels = month.abb, ordered = T))
 
-#  Clean Production data -------------------
+# Clean Production data-------------------
 data <- data %>%
+  # dehydrate powder name.......
   mutate(powder_name = recode(media_name,
-                              # media bottle........
+                              # media bottle
                               "Blood Culture Bottle (adult)" = "BHI",
                               "Blood Culture Bottle (child)" = "BHI",
-                              # media plate........
+                              # media plate
                               "Blood Agar" = "BAB2",
                               "Chocolate Agar" = "BAB infusion",
                               "MacConkey Agar" = "MAC",
@@ -31,7 +46,7 @@ data <- data %>%
                               "Hektoen Enteric Agar" = "HEK",
                               "Modified Thayer-Martin Agar" = "MTM",
                               "GC agar +1% growth supplement" = "GC",
-                              # media tube........
+                              # media tube
                               "Kligler Iron Agar" = "KIA",
                               "Lysine Iron Agar" = "LIA",
                               "Ashdown's Broth" = "TSB",
@@ -42,12 +57,12 @@ data <- data %>%
                               "Trypticase Soy Broth + 20% glycerol" = "TSB",
                               "Urea Agar" = "Urea"
   ),
-  # define media type............................................................
+  # define media type.......
   media_type = recode(media_name,
-                      # media bottle........
+                      # media bottle
                       "Blood Culture Bottle (adult)" = "Adult Bottle",
                       "Blood Culture Bottle (child)" = "Child Bottle",
-                      # media plate........
+                      # media plate
                       "Blood Agar" = "Plate",
                       "Chocolate Agar" = "Plate",
                       "MacConkey Agar" = "Plate",
@@ -60,7 +75,7 @@ data <- data %>%
                       "Hektoen Enteric Agar" = "Plate",
                       "Thiosulfate Citrate Bile Salts Sucrose Agar" = "Plate",
                       "GC agar +1% growth supplement" = "Plate",
-                      # media tube........
+                      # media tube
                       "Kligler Iron Agar" = "Tube",
                       "Lysine Iron Agar" = "Tube",
                       "Ashdown's Broth" = "Tube",
@@ -71,7 +86,7 @@ data <- data %>%
                       "Trypticase Soy Broth + 20% glycerol" = "Tube",
                       "Urea Agar" = "Tube"
   ),
-  # Powder calculation............................................................
+  # Powder calculation.......
   powder_kg = case_when(
     media_name == "Blood Agar" ~ p_quantity*0.88/1000,
     media_name == "Ashdown's Agar" ~ p_quantity*0.88/1000,
@@ -103,17 +118,20 @@ data <- data %>%
   )
 
 
-
-#  Clean Delivery data --------------------
+# Clean Delivery data--------------------
 data <- data %>% 
-  # recode customer name ....................
+  # recode customer name......
   mutate(
     customer_name = recode(customer_name, 
                            "AFRIM Project BTB"  = "BTB_AFRIMS",
                            "National Public Health Laboratory Microbiology Unit"  = "NPHL",
-                           "Sonua Kill Memorial Hospital" = "Sonja kill"
+                           "Sonua Kill Memorial Hospital" = "Sonja kill",
+                           "Central Media Making Laboratory" = "CMML",
+                           "Khmer Soviet Friendship Hospital" = "KSFH",
+                           "Sihanouk Hospital Center of Hope" = "SHCH",
+                           "Diagnostic and Detection Laboratory" = "DDL"
     ),
-    # type of customer....................
+    # type of customer......
     customer_type = recode(customer_name,
                            #Government Lab supported by DMDP
                            "Siem Reap" = "Govt. Lab supported by DMDP",
@@ -123,13 +141,13 @@ data <- data %>%
                            "NPHL" = "Govt. Lab supported by DMDP",
                            
                            #Government lab purchase
-                           "Khmer Soviet Friendship Hospital" = "Govt. Lab (purchased)",
+                           "KSFH" = "Govt. Lab (purchased)",
                            "National Pediatric Hospital" = "Govt. Lab (purchased)",
                            "Kossamak" = "Govt. Lab (purchased)",
                            "Svay Rieng" = "Govt. Lab (purchased)",
                            
                            #Government Lab supported by project
-                           "Sihanouk Hospital Center of Hope" = "Govt. Lab supported by project",
+                           "SHCH" = "Govt. Lab supported by project",
                            "US NAMRU-2" = "Govt. Lab supported by project",
                            "BTB_AFRIMS" = "Govt. Lab supported by project",
                            "National Public Health Laboratory - AMR" = "Govt. Lab supported by project",
@@ -142,19 +160,20 @@ data <- data %>%
                            "BOM" = "Private Lab (purchased)",
                            "Institute Pasteur Cambodge" = "Private Lab (purchased)",
                            "Pro Labpratory" = "Private Lab (purchased)",
-                           "Diagnostic and Detection Laboratory" = "Private Lab (purchased)",
+                           "DDL" = "Private Lab (purchased)",
                            "Saravorn Laboratory" = "Private Lab (purchased)",
                            "Urology clinic" = "Private Lab (purchased)",
                            "Sonja kill" = "Private Lab (purchased)",
-                           # "Sonua Kill Memorial Hospital" =  "Private Lab (purchased)", # incorrect name
                            "Central Laboratory" = "Private Lab (purchased)",
                            "Dynamic Pharma" = "Private Lab (purchased)",
                            "NHealth Laboratory" = "Private Lab (purchased)",
                            "American University of Phnom penh" = "Private Lab (purchased)",
                            "Olympia Medical Hub" = "Private Lab (purchased)",
-                           # Taiining or promotion
+                           "Gold Medical Diagnostic Laboratory" = "Private Lab (purchased)",
+                           
+                           # Training or promotion
                            "DMDP training" = "Training/promotion",
-                           "Central Media Making Laboratory" = "Training/promotion",
+                           "CMML" = "Training/promotion",
                            "IQLS" = "Training/promotion"
     ),
     
@@ -192,17 +211,30 @@ data <- data %>%
   )
 
 
+
+
 # load Raw material data -------
 # read raw materials file
 r_data <- read_csv(here("data","Raw_material.csv"),trim_ws = T, na = c("","NA")) %>% clean_names()
 
-# read threshold 
+# read threshold
 #threshold <- read_csv("stock_threshold.csv",trim_ws = T, na = c("","NA"))
 dic <- readxl::read_excel(here("dictionary","dictionary.xlsx"),trim_ws = T, na = c("","NA"))
 
 r_data <- merge(r_data, dic, by = "product_name", all = T)
 
 
+
+
+
+
+# IQC----
+# raw data from system and filter to date > 2021-01-01
+iqc <- import(here("data","IQC.csv")) %>% 
+  mutate(qc_date = as.Date(qc_date, "%d/%m/%y")) %>% 
+  filter(qc_date >= "2021-01-01", qc_result != "", !batch_no %in% c("	
+KIA260521-01 ", "KIA260521-01", "KIA030621-01", "KIA090621-01")) %>% 
+  mutate(exp = str_extract(comments,"Experiment|experiment|exper|Exper"))
 
 
 # load sheep data----------------
