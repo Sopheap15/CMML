@@ -15,12 +15,11 @@ output:
 .leaflet {
     margin: auto;
 }
-</style>
 
-<style>
 .table-hover > tbody > tr:hover { 
   background-color: #f4f442;
 }
+
 </style>
 
 ```
@@ -44,19 +43,19 @@ knitr::opts_chunk$set(echo = F,
 -   Overview of CMML raw material procurement
 -   Understand customer request and organize media production as well as media delivery
 
---\> Data of media production, distribution and raw materials were extracted from the Central Media Making Laboratory Management System (CMMLMS) database in comma separated value and imported to the R programming language for cleaning and analysis.
+--\> Data of media production, distribution and raw materials were extracted from the Central Media Making Laboratory Management System ([CMMLMS](https://cmmlms.voozanoo.net)) database in comma separated value and imported to the R programming language for cleaning and analysis.
 
 ### 1.2. Background
 
-The Diagnostic Microbiology Development Program (DMDP) has been working with the University of Health Sciences (UHS) in Phnom Penh, Cambodia since 2011 to provide a sustainable source of quality-controlled media such as blood culture broth bottles, agar plates, and media for identification of bacteriological agents. The media is produced and quality controlled by following guidelines for Assuring Quality of Medical Microbiology Culture Media; Clinical and Laboratory Standards Institute and Australian Society for Microbiology 2\^nd edition to guide development of CMML standard operating procedures and processes. In 2017, DMDP supported the expansion and renovation of premises, purchase and installation of equipment and long-term on-site technical mentoring. Care and bleeding of sheep ensured access to a sustainable source of sheep blood. Since February 2019, CMML has held ISO certification (ISO 9001:2015). The media products were included in the Ministry of Health Essential Medicines List and more than 20 customers purchased media for their routine clinical bacteriology laboratory set up.
+The Diagnostic Microbiology Development Program ([DMDP](https://www.dmdp.org)) has been working with the University of Health Sciences ([UHS](https://www.uhs.edu.kh)) in Phnom Penh, Cambodia since 2011 to provide a sustainable source of quality-controlled media such as blood culture broth bottles, agar plates, and media for identification of bacteriological agents. The media is produced and quality controlled by following guidelines for Assuring Quality of Medical Microbiology Culture Media; Clinical and Laboratory Standards Institute and Australian Society for Microbiology 2\^nd edition to guide development of CMML standard operating procedures and processes. In 2017, DMDP supported the expansion and renovation of premises, purchase and installation of equipment and long-term on-site technical mentoring. Care and bleeding of sheep ensured access to a sustainable source of sheep blood. Since February 2019, CMML has held ISO certification (ISO 9001:2015). The media products were included in the Ministry of Health Essential Medicines List and more than 20 customers purchased media for their routine clinical bacteriology laboratory set up.
 
-<!------------------------------------Raw Materials-------------------------------------->
+<!----------------------------Raw Materials--------------------------------->
 
 ## 2. Raw materials
 
-Raw materials are grouped by item name regardless of different brands to discover the current stock. Rows highlighted in pink indicate that the item's quantity is lower than the threshold. The items without threshold were excluded from highlighting.   Note: raw data might not be up to date. It is depends on the day data extracted from CMMLMS in item batch listing session.  
+Raw materials are grouped by item name regardless of different brands to discover the current stock. Rows highlighted in pink indicate that the item's quantity is lower than the threshold. The items without threshold were excluded from highlighting.   Note: raw data might not be up to date. It depends on the day data extracted from CMMLMS in the item batch listing session.  
 
-```{r Raw materials avialable in stock, results='asis'}
+```{r Raw materials available in stock, results='asis'}
 r_da <- r_data %>%
   filter(#remaining_stock_item_batch > 0,
          !is.na(threshold),
@@ -119,7 +118,7 @@ p_data %>%
 
 ## 3. Sheep Care
 
-Sheep blood is a vital supplement to support bacteria growth and visualize hemolysis patterns. To sustain sheep blood supply for CMML, DMDP establish agreement with Resource Development International Cambodia (RDIC) and EUROVET veterinary clinics for care, feeding, bleeding and housing of the sheep. Detail of [sheep inventory](https://docs.google.com/spreadsheets/d/1ixEijAjGdYoIG56HROUVuN9z_DXIak1A6achRbUAzFM/edit#gid=1304838431) 
+Sheep blood is a vital supplement to support bacteria growth and visualize hemolysis patterns. To sustain sheep blood supply for CMML, DMDP established an agreement with Resource Development International Cambodia (RDIC) and EUROVET veterinary clinics for care, feeding, bleeding and housing of the sheep. Detail of [sheep inventory](https://docs.google.com/spreadsheets/d/1ixEijAjGdYoIG56HROUVuN9z_DXIak1A6achRbUAzFM/edit#gid=1304838431) 
 
 <center>
 
@@ -164,7 +163,7 @@ sblood %>%
 	labs(x = "Month", 
 			 y = "Volume (ml)", 
 			 title = "Monthly Sheep Blood collection",
-			 subtitle = paste0("(n= ", format(sblood$n, big.mark = ",") , "ml)")) +
+			 subtitle = paste0("(n= ", format(sum(sblood$n), big.mark = ",") , " ml)")) +
 	theme_bw() +
 	theme(legend.position = "non",
 				axis.text = element_text(color = "black"),
@@ -235,9 +234,9 @@ iqc %>%
 
 ## 5. Media production
 
-We compute media production data from 1 Jan - `r format(max(data$preparation_date),"%d %b %Y")`
+We compute media production data from [1 Jan - `r format(max(data$preparation_date),"%d %b %Y")`]{style="color:red"}
 
-```{r cummulative media production,fig.width = 8}
+```{r cumulative media production,fig.width = 8}
 p_data <- data %>% 
   filter(preparation_date >= "2021-01-01") %>% 
   distinct(batch_number,.keep_all = T) %>% # remove duplicated..................
@@ -328,7 +327,7 @@ p_data %>% # plot data...........
 
 In order to calculate the average of media production accurately, we exclude production data of the last month with less than 28 days.
 
-```{r , results = 'asis'}
+```{r production variation, results = 'asis'}
 p_data <- data %>% 
     filter(preparation_date >= "2021-01-01") %>% 
     filter(preparation_date <= ifelse(format(max(preparation_date),"%d") >= 28, max(preparation_date), as.Date(max(preparation_date)) - as.numeric(format(max(preparation_date),"%d")))) %>% # max date - max day
@@ -354,9 +353,9 @@ p_data %>%
 
 ## 6. Media distribution
 
-Media distribution is calculated from 1 Jan - `r format(max(d_data$delivery_date),"%d %b %Y")`
+Media distribution is calculated from [1 Jan - `r format(max(d_data$delivery_date),"%d %b %Y")`]{style="color:red"}
 
-The bubble in the map shows the different sites of customers orders and the size of the bubble indicates the quantity in units. In cooperation with interactive maps, you can zoom in and click on map to see data plotting.
+The bubble in the map shows the different sites of customers orders and the size of the bubble indicates the quantity in units. In cooperation with interactive maps, you can zoom in and click on a map to see data plotting.
 
 <!-------- adding map ------------>
 
@@ -371,7 +370,7 @@ tm_shape(map) +
 
 ```
 
-```{r cummulative media distribution, fig.width=8}
+```{r cumulative media distribution, fig.width=8}
 d_data <- data %>% 
   filter(delivery_date >= "2021-01-01") %>% 
   group_by(media_name) %>% 
@@ -558,7 +557,7 @@ d_data %>%
   
 ```
 
-We summarised quantity and cost in USD for the DMDP supported laboratory by month for routine diagnostic.\
+We summarised quantity and cost in USD for the DMDP supported laboratory by month for routine diagnostic.  
 <!-- DMDP supported lab with type of media delivery monthly with quantity and cost -->
 
 ```{r DMDP supported lab}

@@ -11,7 +11,6 @@ library(tmap)
 library(googlesheets4)
 library(rstatix)
 
-
 # Load production, delivery data and bind together--------------------
 
 # read data from media production
@@ -211,7 +210,6 @@ data <- data %>%
   )
 
 
-
 # load Raw material data -------
 # read raw materials file
 r_data <- read_csv(here("data","Raw_material.csv"),trim_ws = T, na = c("","NA")) %>% clean_names()
@@ -225,7 +223,6 @@ r_data <- merge(r_data, dic, by = "product_name", all = T)
 
 
 
-
 # IQC----
 # raw data from system and filter to date > 2021-01-01
 iqc <- import(here("data","IQC.csv")) %>% 
@@ -233,7 +230,6 @@ iqc <- import(here("data","IQC.csv")) %>%
   filter(qc_date >= "2021-01-01", qc_result != "", !batch_no %in% c("	
 KIA260521-01 ", "KIA260521-01", "KIA030621-01", "KIA090621-01")) %>% 
   mutate(exp = str_extract(comments,"Experiment|experiment|exper|Exper"))
-
 
 
 # load sheep data----------------
