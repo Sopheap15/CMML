@@ -212,11 +212,11 @@ data <- data %>%
 
 # load Raw material data -------
 # read raw materials file
-r_data <- read_csv(here("data","Raw_material.csv"),trim_ws = T, na = c("","NA")) %>% clean_names()
+r_data <- read_csv(here("data","Raw_material.csv"), trim_ws = T, na = c("","NA")) %>% clean_names()
 
 # read threshold
 #threshold <- read_csv("stock_threshold.csv",trim_ws = T, na = c("","NA"))
-dic <- readxl::read_excel(here("dictionary","dictionary.xlsx"),trim_ws = T, na = c("","NA"))
+dic <- readxl::read_excel(here("dictionary","dictionary.xlsx"), trim_ws = T, na = c("","NA"))
 
 r_data <- merge(r_data, dic, by = "product_name", all = T)
 

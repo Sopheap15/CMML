@@ -47,7 +47,7 @@ knitr::opts_chunk$set(echo = F,
 
 ### 1.2. Background
 
-The Diagnostic Microbiology Development Program ([DMDP](https://www.dmdp.org)) has been working with the University of Health Sciences ([UHS](https://www.uhs.edu.kh)) in Phnom Penh, Cambodia since 2011 to provide a sustainable source of quality-controlled media such as blood culture broth bottles, agar plates, and media for identification of bacteriological agents. The media is produced and quality controlled by following guidelines for Assuring Quality of Medical Microbiology Culture Media; Clinical and Laboratory Standards Institute and Australian Society for Microbiology 2\^nd edition to guide development of CMML standard operating procedures and processes. In 2017, DMDP supported the expansion and renovation of premises, purchase and installation of equipment and long-term on-site technical mentoring. Care and bleeding of sheep ensured access to a sustainable source of sheep blood. Since February 2019, CMML has held ISO certification (ISO 9001:2015). The media products were included in the Ministry of Health Essential Medicines List and more than 20 customers purchased media for their routine clinical bacteriology laboratory set up.
+The Diagnostic Microbiology Development Program ([DMDP](https://www.dmdp.org)) has been working with the University of Health Sciences ([UHS](https://www.uhs.edu.kh)) in Phnom Penh, Cambodia since 2011 to provide a sustainable source of quality-controlled media such as blood culture broth bottles, agar plates, and media for identification of bacteriological agents. The media is produced and quality controlled by following guidelines for Assuring Quality of Medical Microbiology Culture Media; Clinical and Laboratory Standards Institute and Australian Society for Microbiology 2^nd^ edition to guide development of CMML standard operating procedures and processes. In 2017, DMDP supported the expansion and renovation of premises, purchase and installation of equipment and long-term on-site technical mentoring. Care and bleeding of sheep ensured access to a sustainable source of sheep blood. Since February 2019, CMML has held ISO certification (ISO 9001:2015). The media products were included in the Ministry of Health Essential Medicines List and more than 20 customers purchased media for their routine clinical bacteriology laboratory set up.
 
 <!----------------------------Raw Materials--------------------------------->
 
@@ -64,7 +64,7 @@ r_da <- r_data %>%
          ) %>% 
   #select(remaining_stock_item_batch,name,unit,product_type) %>% 
   group_by(name, unit.y, category, threshold) %>% 
-  summarise(instock = round_half_up(sum(remaining_stock_item_batch))) %>% 
+  summarise(instock = round_half_up(sum(remaining_stock_item_batch, na.rm = T))) %>% 
   select(Category = category, 'Item name' = name, 'Qnt instock' = instock, Threshold = threshold, 'In unit' = unit.y) %>%
   arrange(Category, 'Item name')
 
