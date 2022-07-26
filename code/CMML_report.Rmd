@@ -1,28 +1,11 @@
 ---
-title: "<center>Central Media Making Laboratory <br> Report 2021 </center>"
+title: "<center> Central Media Making Laboratory <br> Report </center>"
 output:
   html_document:
     theme: cerulean
-    # toc: true
-    # toc_float: true
-    #code_folding: hide
 ---
+<!-- version 22 Jul 22 -->
 
-<!-- make leaflet center -->
-
-```{=html}
-<style>
-.leaflet {
-    margin: auto;
-}
-
-.table-hover > tbody > tr:hover { 
-  background-color: #f4f442;
-}
-
-</style>
-
-```
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F,
                       message = F,
@@ -32,6 +15,23 @@ knitr::opts_chunk$set(echo = F,
                       comment = F,
                       fig.align = 'center')
 #rm(list = ls())
+```
+
+```{css}
+<style>
+.leaflet {
+    margin: auto;
+}
+
+.table-hover > tbody > tr:hover { 
+  background-color: #f4f442;
+}
+
+body {
+text-align: justify;
+}
+</style>
+
 ```
 
 ## 1. Introduction
@@ -53,20 +53,20 @@ The Diagnostic Microbiology Development Program ([DMDP](https://www.dmdp.org)) h
 
 ## 2. Raw materials
 
-Raw materials are grouped by item name regardless of different brands to discover the current stock. Rows highlighted in pink indicate that the item's quantity is lower than the threshold. The items without threshold were excluded from highlighting.   Note: raw data might not be up to date. It depends on the day data extracted from CMMLMS in the item batch listing session.  
+Data extracted on: [`r format(r_date,"%d %b %Y")`]{style="color:red"}\
+Raw materials are grouped by item name regardless of different brands to discover the current stock. Rows highlighted in pink indicate that the item's quantity is lower than the threshold.\
+Note: raw data might not be up to date. It depends on the day data is extracted from CMMLMS in the item batch listing session.\
+\newpage
 
 ```{r Raw materials available in stock, results='asis'}
 r_da <- r_data %>%
-  filter(#remaining_stock_item_batch > 0,
-         !is.na(threshold),
+  filter(!is.na(threshold),
          !is.na(name)
-        # state == "Good"
          ) %>% 
-  #select(remaining_stock_item_batch,name,unit,product_type) %>% 
   group_by(name, unit.y, category, threshold) %>% 
-  summarise(instock = round_half_up(sum(remaining_stock_item_batch, na.rm = T))) %>% 
+  summarise(instock = round_half_up(sum(as.numeric(remaining_stock_item_batch), na.rm = T))) %>% 
   select(Category = category, 'Item name' = name, 'Qnt instock' = instock, Threshold = threshold, 'In unit' = unit.y) %>%
-  arrange(Category, 'Item name')
+  arrange('Item name', Category)
 
 # short order to the last row
   r_da <- rbind(r_da %>% filter(Category != "Other"),r_da %>% filter(Category == "Other"))
@@ -76,18 +76,18 @@ r_da <- r_data %>%
   kable(align = c('l','l','c','c',"l"), format.args = list(big.mark = ",")) %>%
   kable_styling(bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>%
   row_spec(0, background = "#E09B43", color = "white", align = "c") %>% 
-  row_spec(which(r_da$`Qnt instock` <= r_da$Threshold, r_da$Threshold > 0) , bold = T, background = "#FFE4E1", color = "black") %>% 
-# row_spec(which(r_da$`Item name` == "Distilled Water") , background = "white",color = "black") %>% 
-  #row_spec(which(r_da$`Qnt instock` <= r_da$Threshold), bold = T, background = "#DC7DED", color = "white") %>% 
-  kableExtra::collapse_rows(columns = 1,valign = "top") %>% 
+  row_spec(which(r_da$`Qnt instock` < r_da$Threshold, r_da$Threshold > 0) , bold = T, background = "#FFE4E1", color = "black") %>% 
+  collapse_rows(columns = 1, valign = "top") %>% 
   scroll_box(width = "100%", height = "800px")
 ```
 
-<br> Dehydrate media powder is critical for the production of culture media. Based on media production data, we express dehydrated media in grams to determine the amount of consumption.
+<br>
+\newpage
+Dehydrated media powder is critical for the production of culture media. Based on media production data, we express dehydrated media in grams to determine the consumption.
 
-```{r Raw material consumption base on production}
+```{r Raw material consumption based on production}
 p_data <- data %>% 
-  filter(preparation_date >= "2021-01-01") %>% 
+  filter(preparation_date >= date[1, 2]) %>% 
   distinct(batch_number,.keep_all = T) %>% # remove duplicated..................
   group_by(powder_name) %>% 
   summarise(total = round_half_up(sum(powder_kg,na.rm = T)*1000)) 
@@ -95,7 +95,7 @@ p_data <- data %>%
 p_data %>% 
   ggplot(aes(reorder(powder_name,-total),total,fill = powder_name)) +
   geom_bar(stat = "identity") + 
-  geom_text(aes(label = format(total, big.mark = ",")), hjust = -0.1, size = 3) +
+  geom_text(aes(label = format(total, big.mark = ",")), hjust = -0.01, size = 3) +
   coord_flip() +
   theme_classic() +
   theme(legend.position = "non", 
@@ -104,21 +104,25 @@ p_data %>%
         plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
         axis.title = element_text(color = "BlueViolet")) +
   scale_y_continuous(expand = c(0.01,0.01), 
-                     limits = c(0,max(p_data$total) + 1000), 
+                     limits = c(0,max(p_data$total) + 1500), 
                      label = scales::comma) +
-  labs(y = "Quantity in gram", 
-       x = "Dehydrate media", 
-       title = "Dehydrate media consumption\n from media production data")
+  labs(y = "Quantity (gram)", 
+       x = "Dehydrated media", 
+       title = "Dehydrated media consumption\n from media production data")
 
 ```
 
-**Abbreviation**: *BHI-Brain Heart Infusion, BAB2-Blood agar based No2, BAB infusion-Blood agar based infusion, MAC-MacConkey agar, MHII-Mueller Hinton agar II, MSA- Mannitol Salt agar, HEK-Hektoen Enteric agar, TSA-Tryptic Soy agar, TCBS-Thiosulfate Citrate Bile Salts Sucrose agar, CLED-Cystine Lactose Electrolyte Deficient agar, KIA-Kligler Iron agar, LIA-Lysine Iron agar, SIM-Sulfide Indole Motility, Urea-Urea agar, CIT-Simmons Citrate agar, GC-GC agar, MTM-Modified Thayer-Martin agar, TSB-Tryptic Soy Broth*
+**Abbreviation**: *ATM-Amies Transport Medium, BAB infusion-Blood agar based infusion, BAB2-Blood agar based No2, BHI-Brain Heart Infusion, CIT-Simmons Citrate agar, CLED-Cystine Lactose Electrolyte Deficient agar, GC-GC agar, HEK-Hektoen Enteric agar, KIA-Kligler Iron agar, LIA-Lysine Iron agar, MAC-MacConkey agar, MHII-Mueller Hinton agar II, MSA- Mannitol Salt agar, MTM-Modified Thayer-Martin agar, SIM-Sulfide Indole Motility, TCBS-Thiosulfate Citrate Bile Salts Sucrose agar, TSA-Tryptic Soy agar, TSB-Tryptic Soy Broth, Urea-Urea agar*
 
-<!---------------------------------Sheep Care---------------------------------->
+<!-------------------Sheep Care------------------------------->
+
+\newpage
 
 ## 3. Sheep Care
 
-Sheep blood is a vital supplement to support bacteria growth and visualize hemolysis patterns. To sustain sheep blood supply for CMML, DMDP established an agreement with Resource Development International Cambodia (RDIC) and EUROVET veterinary clinics for care, feeding, bleeding and housing of the sheep. Detail of [sheep inventory](https://docs.google.com/spreadsheets/d/1ixEijAjGdYoIG56HROUVuN9z_DXIak1A6achRbUAzFM/edit#gid=1304838431) 
+Data extracted on: [`r format(Sys.Date(),"%d %b %Y")`]{style="color:red"}
+
+Sheep blood is a vital supplement to support bacterial growth and to visualize hemolysis patterns. To sustain sheep blood supply for CMML, agreements are established with Resource Development International Cambodia (RDIC) and other sheep farm(s) for care, feeding, bleeding and housing of the sheep. Detail of [sheep inventory](https://docs.google.com/spreadsheets/d/1ixEijAjGdYoIG56HROUVuN9z_DXIak1A6achRbUAzFM/edit#gid=1304838431)
 
 <center>
 
@@ -148,61 +152,90 @@ sheep_inventory %>%
   
 ```
 
+\newpage
+
+
 ```{r monthly sheep blood collection}
+
 # sheep blood collection
 sblood <- sheep_blood %>% 
-	mutate(month = factor(format(collection_date, "%b"),levels = month.abb)) %>%
+	filter(collection_date >= date[1,2],
+				 collection_date <= date[2,2],
+				 sterility_test != "Fail") %>% 
+	mutate(month = format(collection_date, "%b")) %>% 
 	group_by(month) %>% 
 	summarise(n = sum(blood_volume_ml))
 
 sblood %>% 
-	ggplot(aes(month, n, fill = month)) + 
+	ggplot(aes(factor(month, levels = month.abb), n, fill = month)) + 
 	geom_bar(stat = "identity") +
-	geom_label(aes(label = format(n, big.mark = ",")), vjust = 1.3) +
-	scale_y_continuous(label = scales::comma) +
+	geom_text(aes(label = format(n, big.mark = ",")), vjust = -0.5, size = 3) +
+	scale_y_continuous(label = scales::comma, expand = expansion(mult = c(.01, 0.10))) +
 	labs(x = "Month", 
 			 y = "Volume (ml)", 
 			 title = "Monthly Sheep Blood collection",
-			 subtitle = paste0("(n= ", format(sum(sblood$n), big.mark = ",") , " ml)")) +
+			 subtitle = paste0("(n= ", format(sum(sblood$n), big.mark = ",") , " ml)"),
+			 caption = paste0(sheep_blood %>% filter(sterility_test == "Fail") %>% summarise(format(sum(blood_volume_ml, na.rm = T), big.mark = ","))," ml of sheep blood contaminated and excluded")) +
 	theme_bw() +
 	theme(legend.position = "non",
 				axis.text = element_text(color = "black"),
 				plot.title = element_text(color = "blue", face = "bold", hjust = 0.5),
 				plot.subtitle = element_text(color = "blue", hjust = 0.5),
 				axis.title = element_text(color = "BlueViolet"),
-				panel.grid = element_blank())
+				panel.grid = element_blank(),
+				plot.caption = element_text(face = "italic"))
 ```
 
-CMML performs quality control of sheep blood by monitoring packed cell volume (PCV). The acceptable range of PCV for sheep is between 24 to 45. Below is the summary table of PCV from the two farms:
+Frequency of sheep blood collection from [`r format(date[1,2], "%d %b")` - `r format(Sys.Date(),"%d %b %Y")`]{style="color:red"}:
 
-```{r sheep care}
-# sheep care
-sheep_care %>% 
-	group_by(farm) %>% 
-	rename("Farm" = farm) %>% 
-	get_summary_stats(pcv_24_45_percent,type = "common") %>% 
-	select(-variable) %>% 
-  kable(align = c("l","c","c","c","c","c","c","c","c","c")) %>% 
+```{r sheep collection blood}
+sheep_blood %>% 
+	filter(!is.na(sheep_id_microchip_no)) %>% 
+	select(collection_date, sheep_id_microchip_no, sex, farm) %>% 
+	group_by(sheep_id_microchip_no, sex, farm) %>% count() %>% 
+	arrange(-n) %>% 
+	rename('Sheep ID' = sheep_id_microchip_no, 'Sex' = sex, 'Farm' = farm, 'Frequency' = n) %>% 
+	mutate_all(~replace(., is.na(.), 0)) %>% 
+	kable(align = c("l","c","c","c")) %>% 
   kable_styling(fixed_thead = T, full_width = T, bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>% 
-  row_spec(0,background = "#CCCCFF") %>% 
-	footnote(general_title = "","n: sheep count in head, iqr: interquartile range, sd: standard deviation, se: standard error, ci: confident interval") 
-
+  row_spec(0, background = "#CCCCFF")
+	
 ```
 
-<!------------------------------------IQC------------------------------------------------>
+\newpage
+
+CMML performs quality control of sheep blood by monitoring packed cell volume (PCV). The acceptable range of PCV for sheep is between 24 to 45. Below is the summary of sheep with PCV out of range, not suitable for blood collection: <!-- year of 2022 -->
+
+```{r sheep care pcv}
+sheep_care %>% 
+	select(sheep_id_microchip_no, care_date, farm, pcv_24_45_percent) %>%
+	filter(pcv_24_45_percent < 24 | pcv_24_45_percent > 45) %>% 
+	group_by(sheep_id_microchip_no) %>% 
+	arrange(sheep_id_microchip_no, care_date) %>% 
+	mutate(care_date = format(care_date, "%d %b %Y")) %>% 
+	rename("Sheep ID" = sheep_id_microchip_no, "Collection Date" = care_date, Farm = farm, PCV = pcv_24_45_percent) %>% 
+	kable(align = c("l","c","c","c")) %>% 
+  kable_styling(fixed_thead = T, full_width = T, bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>% 
+  row_spec(0,background = "#CCCCDF")
+```
+
+<!------------------------------------IQC------------------------------------------>
+
+\newpage
 
 ## 4. Media Internal Quality Control
+Date: [`r format(date[1,2], "%d %b")` - `r format(Sys.Date(),"%d %b %Y")`]{style="color:red"}   
+CMML performs quality control for all batches of media before delivery to customers. The table below summarizes quality control results. Note: experimental media are excluded from this table.
 
-CMML performs quality control for all batches of production media before delivery to customers. Table below summaries result of quality control of media. Note: experiment media were excluded from this table.
 
 ```{r IQC}
-
 iqc <- iqc %>% 
-  filter(is.na(exp)) %>% 
+  filter(is.na(exp)) %>%
   group_by(name_media, qc_result) %>% 
-	count() %>%
-  pivot_wider(names_from = qc_result,values_from = n) %>% 
-  arrange(name_media) %>%  
+	count() %>% 
+  pivot_wider(names_from = qc_result, values_from = n) %>% 
+  arrange(name_media) %>% 
+	mutate(no = ifelse("no" %in% names(.), no, 0)) %>%
   adorn_totals(c("row","col")) %>% 
   mutate_all(~replace(., is.na(.), 0)) %>% 
   mutate(name_media = recode(name_media, 
@@ -232,75 +265,52 @@ iqc %>%
 
 <!-------------------------------Production------------------------------------>
 
+\newpage
+
 ## 5. Media production
 
-We compute media production data from [1 Jan - `r format(max(data$preparation_date),"%d %b %Y")`]{style="color:red"}
+We compute media production data from [1 Jan - `r format(as.Date(ifelse(max(data$preparation_date, na.rm=T) <= date[2,2], max(data$preparation_date, na.rm=T), date[2,2]), origin = "1970-01-01"),"%d %b %Y")`]{style="color:red"}
 
-```{r cumulative media production,fig.width = 8}
+```{r cumulative media production, fig.width=8}
 p_data <- data %>% 
-  filter(preparation_date >= "2021-01-01") %>% 
+  filter(preparation_date >= date[1, 2], preparation_date < date[2, 2]) %>% 
   distinct(batch_number,.keep_all = T) %>% # remove duplicated..................
   group_by(media_name) %>% 
-  summarise(n = sum(p_quantity)) %>% arrange(-n)
+  summarise(n = sum(p_quantity)) %>% 
+	arrange(-n)
 
 ymax <- p_data %>% 
   top_n(n = 1)
 
 p_data %>% 
-  ggplot(aes(reorder(media_name, -n),n,fill = media_name)) +
+  ggplot(aes(reorder(media_name, -n), n, fill = media_name)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label = format(n, big.mark = ",")),size = 3, hjust = -0.01) +
+  geom_text(aes(label = format(n, big.mark = ",")), size = 3, hjust = -0.01) +
   coord_flip() +
   theme_classic() +
   theme(legend.position = "non", 
         panel.grid.major = element_blank(),
         axis.text = element_text(colour = "black"), 
-        plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
-        plot.subtitle = element_text(color = "blue",hjust = 0.5),
+        plot.title = element_text(color = "blue", face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(color = "blue", hjust = 0.5),
         axis.title = element_text(color = "BlueViolet")) +
-  scale_y_continuous(expand = c(0.01,0.01), limits = c(0, ymax$n + 1000)) +
+  scale_y_continuous(expand = expansion(mult = c(.01, 0.10))) +
   labs(y = "Quantity", 
        x = "Media name", 
-       title = "Cummulative Media Production",
+       title = "Cumulative Media Production",
        subtitle = paste0("(n = ",format(sum(p_data$n), big.mark = ",")," unit)")) 
   
 ```
 
-<!-- Media production by month-->
-
-```{r production by month,fig.width=10, fig.height=15}
-p_data <- data %>% 
-  filter(preparation_date >= "2021-01-01") %>% 
-  distinct(batch_number, .keep_all = T) %>% 
-  group_by(media_name, p_month) %>% 
-  mutate(n = sum(p_quantity)) %>% 
-  select(media_name,n,p_month) %>% 
-  distinct(media_name,n,p_month,.keep_all = T)
-
-p_data %>% 
-  ggplot(aes(p_month, n, fill = media_name)) +
-  geom_bar(stat = "identity") +
-  geom_text(aes(label = format(n,big.mark = ",")), size = 2.5, vjust = -0.2) +
-  facet_wrap(~ media_name, ncol = 4) +
-  theme_bw() +
-  theme(strip.text = element_text(face = "bold"), 
-        legend.position = "non",
-        plot.title = element_text(color = "blue",face = "bold", hjust = 0.5),
-        plot.subtitle = element_text(color = "blue", hjust = 0.5),
-        axis.title = element_text(color = "BlueViolet")) +
-  scale_y_continuous(limits = c(0,max(p_data$n) + 200)) +
-  labs(x = "Month", 
-       y = "Unit", 
-       title = "Media Production by Month",
-       subtitle = paste0("(n = ",format(sum(p_data$n), big.mark = ",")," unit)"))
-```
 
 <!-- Monthly production by month by type -->
+
+\newpage
 
 ```{r monthly production by month by type}
 
 p_data <- data %>% 
-  filter(preparation_date >= "2021-01-01") %>% 
+  filter(preparation_date >= date[1, 2], preparation_date < date[2, 2]) %>% 
   distinct(batch_number,media_name,media_type, .keep_all = T) %>%
   group_by(p_month, media_type) %>% 
   summarise(n = sum(p_quantity),.groups = "drop") 
@@ -309,7 +319,7 @@ p_data %>% # plot data...........
   ggplot(aes(p_month, n, fill = media_type)) +
   geom_bar(stat = "identity" ) +
   facet_wrap(~ reorder(media_type, -n), ncol = 2, scales = "free_y") +
-  geom_text(aes(label = format(n, big.mark = ",")), size = 3, vjust = 1.9) +
+  geom_text(aes(label = format(n, big.mark = ",")), size = 3, vjust = -0.5) +
   theme_bw() +
   theme(strip.text = element_text(face = "bold"),
   			strip.background = element_rect(fill = "lightyellow"),
@@ -318,61 +328,40 @@ p_data %>% # plot data...........
         plot.title = element_text(hjust = 0.5,face = "bold",colour = "blue"),
         plot.subtitle = element_text(hjust = 0.5, color = "blue"), 
         axis.title = element_text(color = "BlueViolet")) +
-  scale_y_continuous(labels = scales::comma) +
+  scale_y_continuous(expand = expansion(mult = c(.01, 0.10)), labels = scales::comma) +
   labs(x = "Month",
        y = "Quantity", 
        title = "Media Production by Month by Type", 
        subtitle = paste0("(n = ", format(sum(p_data$n), big.mark = ",")," unit)"))  
 ```
 
-In order to calculate the average of media production accurately, we exclude production data of the last month with less than 28 days.
-
-```{r production variation, results = 'asis'}
-p_data <- data %>% 
-    filter(preparation_date >= "2021-01-01") %>% 
-    filter(preparation_date <= ifelse(format(max(preparation_date),"%d") >= 28, max(preparation_date), as.Date(max(preparation_date)) - as.numeric(format(max(preparation_date),"%d")))) %>% # max date - max day
-    distinct(batch_number,media_name,media_type, .keep_all = T) %>% 
-    group_by(p_month, media_type) %>% 
-    summarise(n = sum(p_quantity),.groups = "drop")
-    
-p_data %>% 
-  group_by(media_type) %>% 
-   summarise("Average (unit)" = round_half_up(mean(n)),
-            "Standard Deviation" = round_half_up(sd(n))) %>% 
-  rename("Media Type" = media_type) %>% 
-  mutate_if(is.numeric, format, big.mark = ",") %>% 
-  kable(align = c('l','c','c')) %>% 
-  kable_styling(full_width = F, bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>% 
-  column_spec(1, width = "25em") %>% 
-  row_spec(0, bold = T, background = "#FFC300")
-
-  
-```
-
 <!-------------------------------Distribution---------------------------------->
+
+\newpage
 
 ## 6. Media distribution
 
-Media distribution is calculated from [1 Jan - `r format(max(d_data$delivery_date),"%d %b %Y")`]{style="color:red"}
+Media distribution is calculated from [1 Jan - `r format(as.Date(ifelse(max(data$delivery_date, na.rm = T) <= date[4,2], max(data$delivery_date, na.rm = T), date[4,2]), origin = "1970-01-01"),"%d %b %Y")`]{style="color:red"}
 
 The bubble in the map shows the different sites of customers orders and the size of the bubble indicates the quantity in units. In cooperation with interactive maps, you can zoom in and click on a map to see data plotting.
 
 <!-------- adding map ------------>
-
-```{r adding map to show customer location,fig.align='center'}
+<center>
+```{r adding map to show customer location, fig.align='center'}
 tmap_mode("view")
 tm_basemap("Esri.WorldTopoMap") +
 tm_shape(map) +
-  tm_polygons(col = "#AED6F1", alpha = 0.5) + 
-  tm_shape(m_data) + 
-  tm_bubbles("Total",col = "Total",legend.col.show = F) +
-  tm_view(set.view = c(104.8879197, 12.6687923, 7.3)) 
-
+  tm_polygons(col = "#AED6F1", alpha = 0.5) +
+  tm_shape(m_data) +
+  tm_bubbles("Total", col = "customer", legend.col.show = F,
+  					 popup.vars = c("Purchased(unit) " = "Total")) +
+  tm_view(set.view = c(104.8879197, 12.6687923, 7.4))
 ```
+</center>
 
 ```{r cumulative media distribution, fig.width=8}
 d_data <- data %>% 
-  filter(delivery_date >= "2021-01-01") %>% 
+	filter(delivery_date >= date[3, 2], delivery_date < date[4, 2]) %>% 
   group_by(media_name) %>% 
   summarise(n = sum(d_quantity),.groups = "drop") %>% 
   arrange(-n) 
@@ -389,19 +378,21 @@ d_data %>%
         plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
         plot.subtitle = element_text(color = "blue",hjust = 0.5), 
         axis.title = element_text(color = "BlueViolet")) +
-  scale_y_continuous(expand = c(0.01,0.01),limits = c(0,max(d_data$n) + 1000)) +
+  scale_y_continuous(expand = expansion(mult = c(.01, 0.10))) +
   labs(y = "Quanity", 
        x = "Media name", 
-       title = "Cummulative Media Distribution", 
+       title = "Cumulative Media Distribution", 
        subtitle = paste0("(n = ",format(sum(d_data$n,na.rm = T), big.mark = ",")," unit)")) 
 
 ```
 
 <!-- Monthly distribution Not sure it is useful information?-->
 
-```{r monthly distribution}
+\newpage
+
+```{r monthly distribution, fig.width= 9}
 d_data <- data %>%
-  filter(delivery_date >= "2021-01-01") %>%
+	filter(delivery_date >= date[3, 2], delivery_date < date[4, 2]) %>% 
   group_by(d_month, media_type) %>%
   summarise(n = sum(d_quantity),.groups = "drop") 
 
@@ -410,10 +401,10 @@ d_data %>% # plot data...........
   geom_bar(stat = "identity", position = "dodge", show.legend = F) +
 	facet_wrap(~ reorder(media_type, -n), ncol = 2, scales = "free_y") +
   geom_text(aes(label = format(n, big.mark = ",")),
-            size = 2.5,vjust = 1.8, 
+            size = 3, vjust = -0.5, 
             position = position_dodge(width = 1),
   					 show.legend = F) +
- scale_y_continuous(labels = scales::comma) +
+ scale_y_continuous(expand = expansion(mult = c(.01, 0.10)),labels = scales::comma) +
   labs(x = "Month",
        y = "Quantity",
        title = "Media Distribution by Month by Type",
@@ -431,18 +422,20 @@ d_data %>% # plot data...........
 
 <!-- Customer in table -->
 
+\newpage
+
 ```{r media distributes to customer, results="asis"}
 d_data <- data %>% 
-  filter(delivery_date >= "2021-01-01") %>% 
-  select(customer_name, d_month, d_quantity, media_type) %>% 
-  group_by(customer_name, d_month) %>% 
+  filter(delivery_date >= date[3, 2], delivery_date < date[4, 2]) %>% 
+  select(customer, d_month, d_quantity, media_type) %>% 
+  group_by(customer, d_month) %>% 
   summarise(n = sum(d_quantity), .groups = "drop") %>% 
   arrange(d_month) %>% 
   pivot_wider(names_from = d_month, values_from = n) %>% 
   mutate_all(~replace(., is.na(.), 0)) %>% 
   mutate(Total = rowSums(across(where(is.numeric)))) %>% 
   arrange(-Total) %>% 
-  rename('Customer Name' = customer_name)
+  rename('Customer Name' = customer)
 
 d_data %>% 
    mutate_if(is.numeric, format, big.mark = ",") %>% 
@@ -458,27 +451,31 @@ d_data %>%
 
 ```
 
+\newpage
+
 <!-- Ashdown's media -->
-```{r Ahdown media distribution, fig.height=8, fig.width= 7}
+
+```{r Ahdown media distribution, fig.height=8, fig.width= 10}
 d_data <- data %>% 
-	filter(delivery_date >= "2021-01-01") %>% 
-	select(media_name, customer_name, d_quantity, d_month) %>% 
+	filter(delivery_date >= date[3, 2], delivery_date < date[4, 2]) %>% 
+	select(media_name, customer, d_quantity, d_month) %>% 
 	filter(media_name == "Ashdown's Agar") %>% 
-	mutate(customer_name = recode(customer_name, 
+	mutate(customer_name = recode(customer, 
 																"Khmer Soviet Friendship Hospital" = "KSFH",
 																"Central Media Making Laboratory" = "CMML")) %>% 
-	group_by(d_month, customer_name) %>% 
+	group_by(d_month, customer) %>% 
 	summarise(d_quantity = sum(d_quantity)) 
 
 d_data %>% 
-	ggplot(aes(d_month, d_quantity, fill = customer_name)) +
+	ggplot(aes(d_month, d_quantity, fill = customer)) +
 	geom_bar(stat = "identity", show.legend = F) + 
-	geom_text(aes(label = d_quantity), size = 2.5, vjust = 0.98) +
-	facet_wrap(~ customer_name, ncol = 3) + 
+	geom_text(aes(label = d_quantity), size = 3, vjust = -0.5) +
+	facet_wrap(~ customer, ncol = 3) + 
 	labs(title = "Ashdown's media distributed", 
 			 subtitle = paste0("(n =  ",format(sum(d_data$d_quantity),big.mark = ",")," unit)"),
 			 x = "Month", 
 			 y = "Quanitity") +
+	scale_y_continuous(expand = expansion(mult = c(.01, 0.10)),labels = scales::comma) +
 	theme_bw() +
   theme(strip.text = element_text(face = "bold"),
         axis.text = element_text(colour = "black"),
@@ -488,92 +485,95 @@ d_data %>%
 
 ```
 
+\newpage
+
 From the start of the year, CMML distributed quality controlled media to different groups of customers around the country. Customers are classified in four groups:\
 1. Government laboratory supported by DMDP: Siem Reap, Battambang, Kampong Cham, Takeo and National Public Health Laboratory\
 2. Government laboratory supported by project: e.g AMR surveillance, stool project in Battambang\
 3. Government laboratory purchased: interestingly with an increase in orders from government laboratories e.g Khmer Soviet Friendship Hospital, Cambodia China Friendship Hospital (Kossamak), National Pediatric Hospital,...\
-4. Private laboratory purchased: e.g Royal Phnom Penh hospital department of laboratory, International Laboratory, Dynamic pharma....
+4. Private laboratory purchased: e.g Royal Phnom Penh hospital department of laboratory, International Laboratory, Dynamic pharma.... 5. Supplier purchased: supplier purchase media from CMML and sell to laboratories. e.g BOM, Dynamic...
 
-```{r media distribute by customer type and media type}
+```{r media distribute by customer type and media type, fig.width = 10}
 d_data <- data %>% 
-  filter(delivery_date >= "2021-01-01") %>% 
-  select(media_type,media_name, customer_name, customer_type, d_quantity,cost) %>% 
-  group_by(customer_type,media_type) %>% 
-  summarise(n = sum(d_quantity,na.rm = T),.groups = "keep") %>%
-  ungroup()
-
+	filter(delivery_date >= date[3, 2], delivery_date < date[4, 2]) %>% 
+	select(media_type,media_name, customer, group, d_quantity,cost) %>% 
+	group_by(group, media_type) %>% 
+	summarise(n = sum(d_quantity,na.rm = T),.groups = "keep") %>%
+	ungroup() %>% 
+	arrange(-n)
+	
 d_data %>% 
-  ggplot(aes(factor(customer_type,levels = c("Govt. Lab supported by DMDP","Govt. Lab supported by project","Govt. Lab (purchased)","Private Lab (purchased)","Training/promotion")), n,fill = media_type)) + 
-  geom_bar(stat = "identity") +
-  geom_text(aes(label = format(n, big.mark = ",")), hjust = -0.01, size = 3) + 
-  facet_wrap(~media_type) + 
-  coord_flip() + 
-  labs(x = "",
-       y = "Quantity",
-       title = "Media Distubution by Cusotmer Type and Media Type",
-       subtitle = paste0("(n =  ",format(sum(d_data$n),big.mark = ",")," unit)")) +
-  scale_y_continuous(labels = scales::comma, expand = c(0,0),limits = c(0,max(d_data$n) + 5000)) +
-  theme_bw() +
-  theme(legend.position = "non",
-        strip.text = element_text(face = "bold"),
-        axis.text = element_text(colour = "black"),
-        plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
-        plot.subtitle = element_text(color = "blue", hjust = 0.5),
-  			axis.title = element_text(color = "BlueViolet"))
+		ggplot(aes(fct_inorder(group), n, fill = media_type)) +
+geom_bar(stat = "identity") +
+	geom_text(aes(label = format(n, big.mark = ",")), hjust = -0.01, size = 3) + 
+	facet_wrap(~media_type, scales = "free_x") + 
+	coord_flip() + 
+	labs(x = "",
+			 y = "Quantity",
+			 title = "Media Distubution by Customer Type and Media Type",
+			 subtitle = paste0("(n =  ",format(sum(d_data$n),big.mark = ",")," unit)")) +
+	scale_y_continuous(labels = scales::comma, expand = expansion(mult = c(.01, 0.10))) +
+	theme_bw() +
+	theme(legend.position = "non",
+				strip.text = element_text(face = "bold"),
+				axis.text = element_text(colour = "black"),
+				plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
+				plot.subtitle = element_text(color = "blue", hjust = 0.5),
+				axis.title = element_text(color = "BlueViolet"))
+
 
 ```
+
+\newpage
 
 <!-- distribute media base on type of customer -->
 
 ```{r proportion of media distributed to customer}
 d_data <- data %>% 
-  filter(delivery_date >= "2021-01-01") %>% 
-  select(media_name, customer_name, customer_type, d_quantity,cost) %>% 
-  group_by(customer_type) %>%
-  summarise(n = sum(cost,na.rm = T),.groups = "keep") %>%
-  ungroup() %>% 
-  mutate(percentage = round_half_up(n/sum(n)*100))
+	filter(delivery_date >= date[3, 2], delivery_date < date[4, 2]) %>% 
+	select(media_name, customer_name, group, d_quantity,cost) %>% 
+	group_by(group) %>%
+	summarise(n = sum(cost,na.rm = T),.groups = "keep") %>%
+	ungroup() %>% 
+	mutate(percentage = round_half_up(n/sum(n)*100)) %>% 
+	arrange(-percentage) %>% 
+	mutate(group = factor(group, levels = group))
 
 d_data %>% 
-  ggplot(aes(x = "",
-             y = n, 
-             fill = factor(customer_type,
-                           levels = c("Govt. Lab supported by DMDP",
-                                      "Govt. Lab supported by project",
-                                      "Govt. Lab (purchased)",
-                                      "Private Lab (purchased)",
-                                      "Training/promotion")))) +
-  geom_bar(stat = "identity") +
-  coord_polar("y", start = 3.5, direction = -1) +
-  theme_void() +
-  geom_text_repel(aes(x = 1.1,
-                      label = paste0(format(round_half_up(n), big.mark = ",")," $"," (",percentage,"%)")),
-                  position = position_stack(vjust = 0.5)) +
-  theme(plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
-        plot.subtitle = element_text(color = "blue",hjust = 0.5)) + 
-  labs(title = "Income from Media Distribution", 
-       subtitle = paste0("Cost = (", format( round_half_up(sum(d_data$n,na.rm = T)), big.mark = ",")," USD)"),
-       fill = "Customer type")
-  
+	ggplot(aes(x = "",
+						 y = n, 
+						 fill =  group)) +
+	geom_bar(stat = "identity") +
+	coord_polar("y", start = 3.5, direction = -1) + 
+	theme_void() +
+	geom_text_repel(aes(x = 1.1,
+											label = paste0(format(round_half_up(n), big.mark = ",")," $"," (",percentage,"%)")),
+									position = position_stack(vjust = 0.5)) +
+	theme(plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
+				plot.subtitle = element_text(color = "blue",hjust = 0.5)) + 
+	labs(title = "Income from Media Distribution", 
+			 subtitle = paste0("Income = (", format( round_half_up(sum(d_data$n,na.rm = T)), big.mark = ",")," USD)"),
+			 fill = "Customer type")
 ```
 
-We summarised quantity and cost in USD for the DMDP supported laboratory by month for routine diagnostic.  
+\newpage
+
+We summarized quantity and cost in USD for the DMDP supported laboratory by month for routine diagnostic testing.\
 <!-- DMDP supported lab with type of media delivery monthly with quantity and cost -->
 
 ```{r DMDP supported lab}
 d_data <- data %>% 
-  select(customer_name, delivery_date, d_month, media_type, d_quantity, cost) %>% 
-  filter(customer_name %in% c("Siem Reap", "Battambang", "Takeo", "Kampong Cham", "NPHL"),
-         delivery_date >= "2021-01-01") %>% 
-  group_by(d_month,customer_name,media_type) %>% 
-  summarise(total = sum(d_quantity,na.rm = T),
+  select(customer, delivery_date, d_month, media_type, d_quantity, cost) %>% 
+  filter(delivery_date >= date[3, 2], delivery_date < date[4, 2], customer %in% c("Siem Reap", "Battambang", "Takeo", "Kampong Cham", "NPHL")) %>% 
+  group_by(d_month,customer,media_type) %>% 
+  summarise(total = sum(d_quantity, na.rm = T),
             cost = sum(cost,na.rm = T)) %>% 
   arrange(d_month) %>% 
 	mutate(Qnt_cost = str_glue("{total} ({round_half_up(cost)}\\$)")) %>% 
   select(-total,-cost) %>% 
   pivot_wider(names_from = d_month, values_from = Qnt_cost) %>% 
-  arrange(customer_name, media_type) %>%
-  rename("Cusomter Name" = customer_name, 
+  arrange(customer, media_type) %>%
+  rename("Cusomter Name" = customer, 
          "Media Type" = media_type) %>% 
   mutate_all(~replace(., is.na(.), 0))
 
@@ -585,8 +585,7 @@ d_data %>%
    							full_width = T, 
    							bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>% 
   row_spec(0, background = "#C6E2FF", extra_css = 'vertical-align: middle !important;') %>% 
-  footnote(general_title = "","No price list for media: Trypticase Soy Broth, 	
-Trypticase Soy Broth + 20% glycerol, Modified Thayer-Martin Agar, GC agar +1% growth supplement") 
+  footnote(general_title = "","NPHL: routine sample") 
 ```
 
 <!------------------------------------Remove objects------------------------------------->
@@ -595,4 +594,8 @@ Trypticase Soy Broth + 20% glycerol, Modified Thayer-Martin Agar, GC agar +1% gr
 rm(list = ls())
 ```
 
-<p align="right"> Reported by CMML <br><br><br> `r format(Sys.Date(),"%d-%b-%Y")`</p>
+<p align="right">
+Reported by CMML 
+<br><br><br>
+`r format(Sys.Date(),"%d-%b-%Y")`
+</p>
