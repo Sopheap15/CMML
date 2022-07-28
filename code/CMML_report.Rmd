@@ -1,5 +1,5 @@
 ---
-title: "<center> Central Media Making Laboratory <br> Report </center>"
+metadata title: "<center> Central Media Making Laboratory <br> Report </center>"
 output:
   html_document:
     theme: cerulean
@@ -12,8 +12,9 @@ knitr::opts_chunk$set(echo = F,
                       collapse = T,
                       warning = F,
                       tidy = T,
-                      comment = F,
-                      fig.align = 'center')
+                      comment = F
+                      #fig.align = 'center'
+											)
 #rm(list = ls())
 ```
 
@@ -347,7 +348,7 @@ The bubble in the map shows the different sites of customers orders and the size
 
 <!-------- adding map ------------>
 <center>
-```{r adding map to show customer location, fig.align='center'}
+```{r adding map to show customer location}
 tmap_mode("view")
 tm_basemap("Esri.WorldTopoMap") +
 tm_shape(map) +
