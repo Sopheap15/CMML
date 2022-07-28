@@ -1,5 +1,5 @@
 ---
-metadata title: "<center> Central Media Making Laboratory <br> Report </center>"
+title: "<center> Central Media Making Laboratory <br> Report </center>"
 output:
   html_document:
     theme: cerulean
@@ -12,8 +12,8 @@ knitr::opts_chunk$set(echo = F,
                       collapse = T,
                       warning = F,
                       tidy = T,
-                      comment = F
-                      #fig.align = 'center'
+                      comment = F,
+                      fig.align = 'center'
 											)
 #rm(list = ls())
 ```
@@ -98,9 +98,9 @@ p_data %>%
   geom_bar(stat = "identity") + 
   geom_text(aes(label = format(total, big.mark = ",")), hjust = -0.01, size = 3) +
   coord_flip() +
-  theme_classic() +
+  theme_bw() +
   theme(legend.position = "non", 
-        panel.grid.major = element_blank(),
+        panel.grid = element_blank(),
         axis.text = element_text(colour = "black"), 
         plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
         axis.title = element_text(color = "BlueViolet")) +
@@ -183,11 +183,10 @@ sblood %>%
 				plot.title = element_text(color = "blue", face = "bold", hjust = 0.5),
 				plot.subtitle = element_text(color = "blue", hjust = 0.5),
 				axis.title = element_text(color = "BlueViolet"),
-				panel.grid = element_blank(),
 				plot.caption = element_text(face = "italic"))
 ```
 
-Frequency of sheep blood collection from [`r format(date[1,2], "%d %b")` - `r format(Sys.Date(),"%d %b %Y")`]{style="color:red"}:
+Frequency of sheep blood collection from [`r format(date[1,2], "%d %b")` - `r format(max(sheep_blood$collection_date),"%d %b %Y")`]{style="color:red"}:
 
 ```{r sheep collection blood}
 sheep_blood %>% 
@@ -225,7 +224,7 @@ sheep_care %>%
 \newpage
 
 ## 4. Media Internal Quality Control
-Date: [`r format(date[1,2], "%d %b")` - `r format(Sys.Date(),"%d %b %Y")`]{style="color:red"}   
+Date: [`r format(date[1,2], "%d %b")` - `r format(max(iqc$qc_date),"%d %b %Y")`]{style="color:red"}   
 CMML performs quality control for all batches of media before delivery to customers. The table below summarizes quality control results. Note: experimental media are excluded from this table.
 
 
@@ -288,9 +287,9 @@ p_data %>%
   geom_bar(stat = "identity") +
   geom_text(aes(label = format(n, big.mark = ",")), size = 3, hjust = -0.01) +
   coord_flip() +
-  theme_classic() +
+  theme_bw() +
   theme(legend.position = "non", 
-        panel.grid.major = element_blank(),
+        panel.grid = element_blank(),
         axis.text = element_text(colour = "black"), 
         plot.title = element_text(color = "blue", face = "bold", hjust = 0.5),
         plot.subtitle = element_text(color = "blue", hjust = 0.5),
@@ -319,7 +318,7 @@ p_data <- data %>%
 p_data %>% # plot data...........
   ggplot(aes(p_month, n, fill = media_type)) +
   geom_bar(stat = "identity" ) +
-  facet_wrap(~ reorder(media_type, -n), ncol = 2, scales = "free_y") +
+  facet_wrap(~ reorder(media_type, -n), ncol = 2) +
   geom_text(aes(label = format(n, big.mark = ",")), size = 3, vjust = -0.5) +
   theme_bw() +
   theme(strip.text = element_text(face = "bold"),
@@ -372,9 +371,9 @@ d_data %>%
   geom_bar(stat = "identity") +
   geom_text(aes(label = format(n, big.mark = ",")), size = 3, hjust = -0.01) +
   coord_flip() +
-  theme_classic() +
+  theme_bw() +
   theme(legend.position = "non", 
-        panel.grid.major = element_blank(), 
+        panel.grid = element_blank(), 
         axis.text = element_text(colour = "black"), 
         plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
         plot.subtitle = element_text(color = "blue",hjust = 0.5), 
@@ -391,7 +390,7 @@ d_data %>%
 
 \newpage
 
-```{r monthly distribution, fig.width= 9}
+```{r monthly distribution}
 d_data <- data %>%
 	filter(delivery_date >= date[3, 2], delivery_date < date[4, 2]) %>% 
   group_by(d_month, media_type) %>%
@@ -400,7 +399,7 @@ d_data <- data %>%
 d_data %>% # plot data...........
   ggplot(aes(d_month, n, fill = media_type)) +
   geom_bar(stat = "identity", position = "dodge", show.legend = F) +
-	facet_wrap(~ reorder(media_type, -n), ncol = 2, scales = "free_y") +
+	facet_wrap(~ reorder(media_type, -n), ncol = 2) +
   geom_text(aes(label = format(n, big.mark = ",")),
             size = 3, vjust = -0.5, 
             position = position_dodge(width = 1),
@@ -410,7 +409,7 @@ d_data %>% # plot data...........
        y = "Quantity",
        title = "Media Distribution by Month by Type",
        subtitle = paste0("(n =  ",format(sum(d_data$n,na.rm = T),big.mark = ",")," unit)")) +
-    theme_classic() +
+    theme_bw() +
      theme(strip.text = element_text(face = "bold"),
      			strip.background = element_rect(fill = "lightyellow"),
         axis.text = element_text(colour = "black"),
