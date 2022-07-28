@@ -5,4 +5,3 @@ source("code/Load_data.R",local = knitr::knit_global())
 rmarkdown::render(
   input = "code/CMML_report.Rmd", encoding = 'UTF-8',
   output_file = paste0("../Output/CMML Report ",Sys.Date(),".html"))
-
