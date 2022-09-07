@@ -5,8 +5,7 @@ url <- "https://docs.google.com/spreadsheets/d/1ixEijAjGdYoIG56HROUVuN9z_DXIak1A
 # read sheep inventory
 sheep_inventory <- read_sheet(url, sheet = "Sheep_inventory", skip = 2) %>%
 	clean_names() %>% 
-	mutate(comment1 = tolower(str_extract(comment, "dead|Dead"))) %>% 
-	filter(is.na(comment))
+	filter(!str_detect(comment, "(?i)dead|(?i)culled|(?i)donated") | is.na(comment)) 
 
 # read sheep care
 sheep_care <- read_sheet(url, sheet = "Sheep_care", skip = 2) %>% 

@@ -37,14 +37,6 @@ knitr::opts_chunk$set(echo = F,
   background-color: #f4f442;
 }
 
-table {
-	display: table;
-  border-spacing: 0;
-  border-collapse: separate;
-  border-radius: 8px;
-  border: 1px solid black;
-}
-
 .leaflet {
 	border-radius:8px;
 }
@@ -522,7 +514,7 @@ d_data %>%
 \newpage
 
 From the start of the year, CMML distributed quality controlled media to different groups of customers around the country. Customers are classified in four groups:\
-1. Government laboratory supported by DMDP: Siem Reap, Battambang, Kampong Cham, Takeo and National Public Health Laboratory\
+1. Government laboratory supported by DMDP: Siem Reap, Battambang, Kampong Cham, Takeo and National Public Health Laboratory. Note: from May to September 2022, laboratories start to pay for bacteriological culture media from 20% and increase gradually to 100%.\
 2. Government laboratory supported by project: e.g AMR surveillance, stool project in Battambang\
 3. Government laboratory purchased: interestingly with an increase in orders from government laboratories e.g Khmer Soviet Friendship Hospital, Cambodia China Friendship Hospital (Kossamak), National Pediatric Hospital,...\
 4. Private laboratory purchased: e.g Royal Phnom Penh hospital department of laboratory, International Laboratory, Dynamic pharma.... 5. Supplier purchased: supplier purchase media from CMML and sell to laboratories. e.g BOM, Dynamic...
@@ -617,6 +609,7 @@ d_data %>%
    collapse_rows(1, valign = "middle") %>% 
    kable_styling(fixed_thead = T, 
    							full_width = T, 
+ 
    							bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>% 
   row_spec(0, background = "#C6E2FF", extra_css = 'vertical-align: middle !important;') %>% 
   footnote(general_title = "","NPHL: routine sample") 
