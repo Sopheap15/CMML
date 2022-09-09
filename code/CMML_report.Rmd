@@ -129,9 +129,9 @@ p_data %>%
         axis.text = element_text(colour = "black"), 
         plot.title = element_text(color = "blue",face = "bold",hjust = 0.5),
         axis.title = element_text(color = "BlueViolet")) +
-  scale_y_continuous(expand = c(0.01,0.01), 
-                     limits = c(0,max(p_data$total) + 1500), 
-                     label = scales::comma) +
+  scale_y_continuous(expand =  expansion(mult = c(.01, 0.10)), 
+                     label = scales::comma
+  									 ) +
   labs(y = "Quantity (gram)", 
        x = "Dehydrated media", 
        title = "Dehydrated media consumption\n from media production data")
@@ -219,7 +219,7 @@ sheep_blood %>%
 	group_by(sheep_id_microchip_no, sex, farm) %>% count() %>% 
 	arrange(-n) %>% 
 	rename('Sheep ID' = sheep_id_microchip_no, 'Sex' = sex, 'Farm' = farm, 'Frequency' = n) %>% 
-	mutate_all(~replace(., is.na(.), 0)) %>% 
+	#mutate_all(~replace(., is.na(.), 0)) %>% 
 	kable(align = c("l","c","c","c")) %>% 
   kable_styling(fixed_thead = T, full_width = T, bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>% 
   row_spec(0, background = "#CCCCFF")
@@ -383,7 +383,9 @@ tm_shape(map) +
   tm_view(set.view = c(104.8879197, 12.6687923, 7.4))
 ```
 
-</center> <br>
+</center>
+
+<br>
 
 ```{r cumulative media distribution, fig.width=8}
 d_data <- data %>% 
@@ -456,9 +458,9 @@ d_data <- data %>%
   select(customer, d_month, d_quantity, media_type) %>% 
   group_by(customer, d_month) %>% 
   summarise(n = sum(d_quantity), .groups = "drop") %>% 
-  arrange(d_month) %>% 
+  arrange(d_month) %>%
   pivot_wider(names_from = d_month, values_from = n) %>% 
-  mutate_all(~replace(., is.na(.), 0)) %>% 
+  mutate_all(., ~replace(., is.na(.), 0)) %>% 
   mutate(Total = rowSums(across(where(is.numeric)))) %>% 
   arrange(-Total) %>% 
   rename('Customer Name' = customer)
@@ -519,7 +521,7 @@ From the start of the year, CMML distributed quality controlled media to differe
 3. Government laboratory purchased: interestingly with an increase in orders from government laboratories e.g Khmer Soviet Friendship Hospital, Cambodia China Friendship Hospital (Kossamak), National Pediatric Hospital,...\
 4. Private laboratory purchased: e.g Royal Phnom Penh hospital department of laboratory, International Laboratory, Dynamic pharma.... 5. Supplier purchased: supplier purchase media from CMML and sell to laboratories. e.g BOM, Dynamic...
 
-```{r media distribute by customer type and media type, fig.width = 10}
+```{r media distribute by customer type and media type, fig.width=8}
 d_data <- data %>% 
 	filter(delivery_date >= date[3, 2], delivery_date < date[4, 2]) %>% 
 	select(media_type,media_name, customer, group, d_quantity,cost) %>% 
@@ -538,7 +540,7 @@ geom_bar(stat = "identity") +
 			 y = "Quantity",
 			 title = "Media Distubution by Customer Type and Media Type",
 			 subtitle = paste0("(n =  ",format(sum(d_data$n),big.mark = ",")," unit)")) +
-	scale_y_continuous(labels = scales::comma, expand = expansion(mult = c(.01, 0.10))) +
+	scale_y_continuous(labels = scales::comma, expand = expansion(mult = c(.01, 0.17))) +
 	theme_bw() +
 	theme(legend.position = "non",
 				strip.text = element_text(face = "bold"),
@@ -616,9 +618,10 @@ d_data %>%
 ```
 
 <!-- ending report -->
-<div class="end_report">
+
+::: end_report
 Reported by CMML <br><br><br> `r format(Sys.Date(),"%d-%b-%Y")`
-</div>
+:::
 
 <!------------------------------------Remove objects------------------------------------->
 
