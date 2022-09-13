@@ -11,12 +11,16 @@ d_data <- list.files("data", pattern = ".*deliv.*.csv", full.names = T) %>%
 	clean_names() %>% 
 	rename("d_quantity" = quantity) %>% 
 	mutate(delivery_date = as.Date(delivery_date, format = "%Y-%m-%d"),
-				 customer_name = str_replace(customer_name, pattern = "[Ff]onda.*M.*", replacement = "Fondation Merieux"))
+				 customer_name = str_replace(customer_name, pattern = "[Ff]onda.*M.*", 
+				 														replacement = "Fondation Merieux"),
+				 customer_name = str_to_lower(str_trim(customer_name, side = "both"))
+				 )
 
 # Read customer data----
 customer <- list.files("dictionary", pattern = "^[dD]ic.*.xls(x)?", full.names = T) %>%
 	import(sheet = "customer") %>% 
-	clean_names()
+	clean_names() %>% 
+	mutate(cmmlms = str_to_lower(str_trim(cmmlms, side = "both")))
 
 # Merge delivery and customer
 d_data <- merge(d_data, customer, by.x = "customer_name", by.y = "cmmlms") %>% view()

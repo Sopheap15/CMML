@@ -373,6 +373,7 @@ The bubble in the map shows the different sites of customers orders and the size
 <center>
 
 ```{r adding map to show customer location}
+tmap_options(max.categories = 40)
 tmap_mode("view")
 tm_basemap("Esri.WorldTopoMap") +
 tm_shape(map) +
