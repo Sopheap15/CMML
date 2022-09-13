@@ -19,9 +19,7 @@ customer <- list.files("dictionary", pattern = "^[dD]ic.*.xls(x)?", full.names =
 	clean_names()
 
 # Merge delivery and customer
-d_data <- merge(d_data, customer, by.x = "customer_name", by.y = "cmmlms") 
-
-
+d_data <- merge(d_data, customer, by.x = "customer_name", by.y = "cmmlms") %>% view()
 
 # Merge production and delivery----
 data <-	full_join(p_data, d_data) %>% 
