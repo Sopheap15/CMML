@@ -1,6 +1,5 @@
 # load sheep data----------------
 gs4_deauth()
-#gs4_auth(email = "oeng.sopheap@dmdp.org")
 url <- "https://docs.google.com/spreadsheets/d/1ixEijAjGdYoIG56HROUVuN9z_DXIak1A6achRbUAzFM/edit#gid=1304838431"
 # read sheep inventory
 sheep_inventory <- read_sheet(url, sheet = "Sheep_inventory", skip = 2) %>%

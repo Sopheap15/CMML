@@ -34,7 +34,7 @@ r_data <- r_data %>%
 			str_detect(product_name, "(?i)ceftriaxone") == T ~ "Ceftriaxone 30mg",
 			str_detect(product_name, "(?i)ciprofloxacin") == T ~ "Ciprofloxacine 5mg",
 			str_detect(product_name, "(?i)tape clear") == T ~ "Clear scotch tape",
-			str_detect(product_name, "(?i)cled agar") == T ~ "CLED agar w/bromothymol blue",
+			str_detect(product_name, "(?i)cled agar") == T ~ "CLED agar",
 			str_detect(product_name, "(?i)(cotrimoxazole)|(trimethoprim)") == T ~ "Cotrimoxazole 25mg",
 			str_detect(product_name, "(?i)100-well cryogenic") == T ~ "Cryobox 100 wells",
 			str_detect(product_name, "(?i)crystal violet (?!0.1)") == T ~ "Crystal Violet",
