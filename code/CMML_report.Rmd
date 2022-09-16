@@ -221,7 +221,7 @@ sheep_blood %>%
 	rename('Sheep ID' = sheep_id_microchip_no, 'Sex' = sex, 'Farm' = farm, 'Frequency' = n) %>% 
 	#mutate_all(~replace(., is.na(.), 0)) %>% 
 	kable(align = c("l","c","c","c")) %>% 
-  kable_styling(fixed_thead = T, full_width = T, bootstrap_options = c("bordered","condensed", "striped", "hover","responsive")) %>% 
+  kable_styling(fixed_thead = T, full_width = T, bootstrap_options = c("bordered","condensed","striped", "hover","responsive")) %>% 
   row_spec(0, background = "#CCCCFF")
 	
 ```
@@ -377,11 +377,11 @@ tmap_options(max.categories = 40)
 tmap_mode("view")
 tm_basemap("Esri.WorldTopoMap") +
 tm_shape(map) +
-  tm_polygons(col = "#AED6F1", alpha = 0.5) +
+  tm_polygons(col = "aquamarine", alpha = 0.5) +
   tm_shape(m_data) +
   tm_bubbles("Total", col = "customer", legend.col.show = F,
   					 popup.vars = c("Purchased(unit) " = "Total")) +
-  tm_view(set.view = c(104.8879197, 12.6687923, 7.4))
+  tm_view(set.view = c(104.8879197, 12.4687923, 7.49))
 ```
 
 </center>
