@@ -373,15 +373,23 @@ The bubble in the map shows the different sites of customers orders and the size
 <center>
 
 ```{r adding map to show customer location}
+target <- map %>% filter(adm1_name %in% c("Battambang", "Siemreap", "Kampong Cham", "Takeo", "Phnom Penh", "Svay Rieng", "Kampot"))
+
 tmap_options(max.categories = 40)
 tmap_mode("view")
 tm_basemap("Esri.WorldTopoMap") +
-tm_shape(map) +
-  tm_polygons(col = "aquamarine", alpha = 0.5) +
+tm_shape(map) + # only map
+  tm_polygons(col = "aquamarine", alpha = 0.5, lty = 4) +
+tm_shape((target)) + # highlight target province
+	tm_polygons(col = "yellow", alpha = 0.5) +
   tm_shape(m_data) +
-  tm_bubbles("Total", col = "customer", legend.col.show = F,
-  					 popup.vars = c("Purchased(unit) " = "Total")) +
-  tm_view(set.view = c(104.8879197, 12.4687923, 7.49))
+	tm_dots(size = 0.15, col = "customer", legend.show = F, 
+					popup.vars = c("Purchased: " = "Purchased")) +
+	tm_view(set.view = c(104.8879197, 12.4687923, 7.49))
+
+  # tm_bubbles("Total", col = "customer", legend.col.show = F,
+  # 					 popup.vars = c("Purchased(unit)" = "Total")) +
+  # tm_view(set.view = c(104.8879197, 12.4687923, 7.49))
 ```
 
 </center>
