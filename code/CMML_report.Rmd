@@ -372,7 +372,7 @@ The bubble in the map shows the different sites of customers orders and the size
 
 <center>
 
-```{r adding map to show customer location}
+```{r adding map to show customer location, out.width = '80%'}
 target <- map %>% filter(adm1_name %in% c("Battambang", "Siemreap", "Kampong Cham", "Takeo", "Phnom Penh", "Svay Rieng", "Kampot"))
 
 tmap_options(max.categories = 40)
@@ -385,11 +385,11 @@ tm_shape((target)) + # highlight target province
   tm_shape(m_data) +
 	tm_dots(size = 0.15, col = "customer", legend.show = F, 
 					popup.vars = c("Purchased: " = "Purchased")) +
-	tm_view(set.view = c(104.8879197, 12.4687923, 7.49))
+	tm_view(set.view = c(104.8879197, 12.187923, 7.49))
 
   # tm_bubbles("Total", col = "customer", legend.col.show = F,
   # 					 popup.vars = c("Purchased(unit)" = "Total")) +
-  # tm_view(set.view = c(104.8879197, 12.4687923, 7.49))
+  # tm_view(set.view = c(104.8879197, 12.4787923, 7.49))
 ```
 
 </center>
