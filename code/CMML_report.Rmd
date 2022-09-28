@@ -568,13 +568,16 @@ geom_bar(stat = "identity") +
 ```{r proportion of media distributed to customer}
 d_data <- data %>% 
 	filter(delivery_date >= date[3, 2], delivery_date < date[4, 2]) %>% 
-	select(media_name, customer_name, group, d_quantity,cost) %>% 
+	select(delivery_date,media_name, customer_name, group, d_quantity,cost) %>% 
+	mutate(group = case_when(delivery_date >= "2022-09-01" & 
+													 	group == "Govt. Lab (supported by DMDP)" ~ "Govt. Lab (purchased)", 
+													 TRUE	~ group)) %>% 
 	group_by(group) %>%
 	summarise(n = sum(cost,na.rm = T),.groups = "keep") %>%
 	ungroup() %>% 
 	mutate(percentage = round_half_up(n/sum(n)*100)) %>% 
 	arrange(-percentage) %>% 
-	mutate(group = factor(group, levels = group))
+	mutate(group = factor(group, levels = group)) 
 
 d_data %>% 
 	ggplot(aes(x = "",
